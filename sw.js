@@ -55,10 +55,16 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
   if (!req.url.startsWith(self.registration.scope)) return;
+  /* Anmeldung nie anfassen: weder abfangen noch zwischenspeichern */
+  if (url.pathname.startsWith('/.auth/') || url.pathname === '/login' || url.pathname === '/logout') return;
 
   if (req.mode === 'navigate') {
+    /* Online zuerst das Netz fragen, damit die Anmeldung greift. Nur ohne Verbindung kommt die gespeicherte Seite. */
     event.respondWith(
-      caches.match('index.html', { cacheName: CACHE }).then((hit) => hit || fetch(req))
+      new Promise((resolve, reject) => {
+        const timer = setTimeout(reject, 4000);
+        fetch(req).then((res) => { clearTimeout(timer); resolve(res); }, (err) => { clearTimeout(timer); reject(err); });
+      }).catch(() => caches.match('index.html', { cacheName: CACHE }).then((hit) => hit || Response.error()))
     );
     return;
   }
@@ -67,7 +73,7 @@ self.addEventListener('fetch', (event) => {
     caches.match(req, { cacheName: CACHE, ignoreSearch: true }).then((hit) => {
       if (hit) return hit;
       return fetch(req).then((res) => {
-        if (res && res.ok) {
+        if (res && res.ok && res.type === 'basic' && !res.redirected) {
           const copy = res.clone();
           caches.open(CACHE).then((cache) => cache.put(req, copy));
         }

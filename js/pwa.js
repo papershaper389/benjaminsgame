@@ -16,6 +16,22 @@
   }
   $('foot').textContent = 'Version ' + build + (label ? ' · ' + label : '');
 
+  /* Angemeldeten Spieler zeigen (nur auf Azure vorhanden) */
+  if (env !== 'dev' && location.protocol !== 'file:') {
+    fetch('/.auth/me', { credentials: 'same-origin', cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const u = d && d.clientPrincipal;
+        if (!u || !u.userDetails) return;
+        const f = $('foot');
+        const a = document.createElement('a');
+        a.href = '/.auth/logout?post_logout_redirect_uri=/';
+        a.textContent = 'Abmelden';
+        f.append(' · ' + u.userDetails + ' · ', a);
+      })
+      .catch(() => { /* offline: kein Hinweis */ });
+  }
+
   /* Installieren (Chrome, Edge, Android). Safari bietet das nur über das Teilen-Menü. */
   let deferred = null;
   window.addEventListener('beforeinstallprompt', (e) => {

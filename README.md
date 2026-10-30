@@ -20,6 +20,16 @@ Die beiden Versionen sind vollständig getrennt:
 - **Eigener Spielstand.** Der Spielstand liegt im Browser der jeweiligen Domain, der Schlüssel heißt `steinzeitdorf-v1:prod` bzw. `steinzeitdorf-v1:beta`.
 - **Erkennbar.** Beta hat blaue Icons mit „BETA“-Band, den Namen „Steinzeitdorf Beta“ und ein Abzeichen im Spiel. Die Fußzeile zeigt Datum und Commit der laufenden Version.
 
+## Zugriffsschutz
+
+Beide Static Web Apps sind hinter einer Anmeldung. Wer die Adresse öffnet, wird zu GitHub geschickt und kommt nur hinein, wenn das Konto die Rolle `spieler` hat. Alle anderen sehen die Seite „Kein Zugang“ (`nicht-freigeschaltet.html`). Konfiguriert ist das in `staticwebapp.config.json`.
+
+Öffentlich bleiben nur `sw.js`, `manifest.webmanifest`, `icons/` und die Seite „Kein Zugang“. Sie enthalten kein Spiel, und der Browser braucht sie ohne Anmeldung, um die App zu installieren und zu aktualisieren.
+
+**Person freischalten** (pro Umgebung einzeln): Azure-Portal → Static Web App → **Rollenverwaltung** → **Einladen**. Anbieter `GitHub`, Benutzername der Person, Rolle `spieler`, Gültigkeit wählen. Die Person öffnet den erzeugten Link und meldet sich an.
+
+**Offline:** Die installierte App startet auch ohne Netz aus dem Zwischenspeicher. Online wird bei jedem Start zuerst die Anmeldung geprüft.
+
 ## Arbeitsablauf
 
 1. Änderungen auf `beta` pushen. Der Workflow baut die Beta-Version und veröffentlicht sie nach etwa einer Minute.
