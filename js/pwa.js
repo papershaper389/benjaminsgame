@@ -17,7 +17,7 @@
   $('foot').textContent = 'Version ' + build + (label ? ' · ' + label : '');
 
   /* Angemeldeten Spieler zeigen (nur auf Azure vorhanden) */
-  if (env !== 'dev' && location.protocol !== 'file:') {
+  if (env !== 'dev' && location.protocol !== 'file:' && navigator.onLine) {
     fetch('/.auth/me', { credentials: 'same-origin', cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
