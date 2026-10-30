@@ -2,7 +2,8 @@
 /* Baut eine auslieferbare Kopie der App und stempelt Umgebung, Version und Pfad ein.
 
    Aufruf: node scripts/stamp.mjs <prod|beta> <quelle> <ziel> <sha> <datum> <basispfad>
-   Beispiel: node scripts/stamp.mjs beta ./beta ./site/beta a1b2c3d 2026-10-30 /benjaminsgame/beta/
+   Beispiel: node scripts/stamp.mjs beta . dist a1b2c3d 2026-10-30 /
+   Der Basispfad ist "/", solange die App auf dem Hauptpfad ihrer Domain liegt (Azure Static Web Apps).
 */
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -13,7 +14,7 @@ if (!['prod', 'beta'].includes(env) || !src || !dest || !sha || !date || !base) 
   process.exit(1);
 }
 
-const APP = ['index.html', 'env.js', 'manifest.webmanifest', 'sw.js', 'css', 'js', 'vendor', 'fonts', 'icons'];
+const APP = ['index.html', 'env.js', 'manifest.webmanifest', 'sw.js', 'staticwebapp.config.json', 'css', 'js', 'vendor', 'fonts', 'icons'];
 mkdirSync(dest, { recursive: true });
 for (const item of APP) cpSync(join(src, item), join(dest, item), { recursive: true });
 

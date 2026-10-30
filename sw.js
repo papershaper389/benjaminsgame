@@ -7,8 +7,8 @@ const BUILD = '__BUILD__';
 const ENV = '__ENV__';
 const DEV = BUILD.startsWith('__');
 
-/* Prod und Beta liegen auf derselben Domain. Der Umgebungsname im Cache-Namen
-   verhindert, dass die eine Version den Cache der anderen löscht. */
+/* Prod und Beta haben eigene Domains. Der Umgebungsname im Cache-Namen trennt sie
+   trotzdem sauber, falls beide einmal auf derselben Domain laufen. */
 const PREFIX = 'steinzeitdorf-' + ENV + '-';
 const CACHE = PREFIX + BUILD;
 
@@ -55,8 +55,6 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
   if (!req.url.startsWith(self.registration.scope)) return;
-  /* Der Prod-Worker deckt per Pfad auch /beta/ ab und überlässt es dem Beta-Worker. */
-  if (ENV === 'prod' && url.pathname.startsWith(new URL('beta/', self.registration.scope).pathname)) return;
 
   if (req.mode === 'navigate') {
     event.respondWith(
