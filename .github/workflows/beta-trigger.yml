@@ -1,0 +1,18 @@
+name: Beta veröffentlichen
+
+# Ein Push auf beta startet den Deploy-Workflow auf main. Er baut dann main und beta neu.
+on:
+  push:
+    branches: [beta]
+
+permissions:
+  actions: write
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy-Workflow auf main starten
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml --repo "$GITHUB_REPOSITORY" --ref main

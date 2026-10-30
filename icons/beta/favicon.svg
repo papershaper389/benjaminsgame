@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<rect width="512" height="512" rx="96" fill="#1f2c36"/>
+<polygon points="126.1,256.0 256.0,298.0 256.0,360.0 126.1,318.0" fill="#5a4636"/>
+<polygon points="256.0,298.0 385.9,256.0 385.9,318.0 256.0,360.0" fill="#41322a"/>
+<polygon points="256.0,130.0 385.9,172.0 385.9,256.0 256.0,298.0 126.1,256.0 126.1,172.0" fill="#4f8396"/>
+<polygon points="256.0,145.1 362.5,179.6 362.5,248.4 256.0,282.9 149.5,248.4 149.5,179.6" fill="#6fa8b8"/>
+<g transform="translate(138,210) scale(0.78)"><rect x="-5" y="0" width="10" height="22" fill="#4a3320"/><polygon points="0,-62 -24,-14 24,-14" fill="#2f5a2e"/><polygon points="0,-40 -32,6 32,6" fill="#3b6e36"/></g><g transform="translate(368,200) scale(0.7)"><rect x="-5" y="0" width="10" height="22" fill="#4a3320"/><polygon points="0,-62 -24,-14 24,-14" fill="#2f5a2e"/><polygon points="0,-40 -32,6 32,6" fill="#3b6e36"/></g>
+<ellipse cx="318.0" cy="244.0" rx="13" ry="8" fill="#8d867a"/><ellipse cx="299.8" cy="265.9" rx="13" ry="8" fill="#8d867a"/><ellipse cx="256.0" cy="275.0" rx="13" ry="8" fill="#8d867a"/><ellipse cx="212.2" cy="265.9" rx="13" ry="8" fill="#8d867a"/><ellipse cx="194.0" cy="244.0" rx="13" ry="8" fill="#8d867a"/><ellipse cx="212.2" cy="222.1" rx="13" ry="8" fill="#8d867a"/><ellipse cx="256.0" cy="213.0" rx="13" ry="8" fill="#8d867a"/><ellipse cx="299.8" cy="222.1" rx="13" ry="8" fill="#8d867a"/>
+<g transform="translate(256,248)">
+      <path d="M0,-92 C14,-62 40,-42 40,-10 C40,16 22,30 0,30 C-22,30 -40,16 -40,-10 C-40,-34 -14,-52 0,-92 Z" fill="#e8742c"/>
+      <path d="M0,-52 C9,-34 24,-24 24,-4 C24,12 13,22 0,22 C-13,22 -24,12 -24,-4 C-24,-22 -8,-30 0,-52 Z" fill="#f6b53c"/>
+      <path d="M0,-18 C5,-8 12,-3 12,6 C12,14 7,19 0,19 C-7,19 -12,14 -12,6 C-12,-3 -5,-8 0,-18 Z" fill="#ffe08a"/></g>
+<g><rect x="156" y="368" width="200" height="50" rx="12" fill="#e3b64f"/><text x="256" y="404" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-weight="700" font-size="34" letter-spacing="6" fill="#1f2c36">BETA</text></g>
+</svg>
