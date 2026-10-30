@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Steinzeitdorf</title>
+<meta name="description" content="Aufbauspiel in der Steinzeit: Führe eine kleine Horde durch die Jahreszeiten, baue Arbeitsplätze und Hütten und errichte das Totem des Stammes.">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#1b1612" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#ddd6c8" media="(prefers-color-scheme: light)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Steinzeitdorf">
+<link rel="stylesheet" href="css/style.css">
+<script src="env.js"></script>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-tree" viewBox="0 0 24 24"><path d="M12 22v-5M12 2.5 6 10h3l-4 6h14l-4-6h3z"/></symbol>
+    <symbol id="i-rock" viewBox="0 0 24 24"><path d="M3 19l4.5-9 4 5 3-7 6.5 11z"/></symbol>
+    <symbol id="i-wave" viewBox="0 0 24 24"><path d="M2 8c3-3 5 3 8 0s5 3 8 0 3-1 4 0M2 15c3-3 5 3 8 0s5 3 8 0 3-1 4 0"/></symbol>
+    <symbol id="i-grass" viewBox="0 0 24 24"><path d="M7 20c0-5-.5-8-3-10M7 20c0-4 1-7 3-9M16 20c0-6-.5-9-3-12M16 20c0-5 1-8 4-10"/></symbol>
+    <symbol id="i-hut" viewBox="0 0 24 24"><path d="M2.5 20 12 4l9.5 16zM9.5 20 12 14l2.5 6"/></symbol>
+    <symbol id="i-fire" viewBox="0 0 24 24"><path d="M12 3c.5 4 5 6 5 11a5 5 0 0 1-10 0c0-3 2-4 2.5-7 .8.8 1.5 1.5 2.5-4zM12 20a2.5 2.5 0 0 1-2.5-2.5c0-1.5 1.5-2 2.5-4 1 2 2.5 2.5 2.5 4A2.5 2.5 0 0 1 12 20z"/></symbol>
+    <symbol id="i-berries" viewBox="0 0 24 24"><circle cx="8" cy="15" r="3.2"/><circle cx="16" cy="15" r="3.2"/><circle cx="12" cy="8.5" r="3.2"/><path d="M12 5.3C12 3.5 13 2.5 15 2"/></symbol>
+    <symbol id="i-axe" viewBox="0 0 24 24"><path d="M5 21 15 6M13 4.5c3-2 6-1.5 7 0-1 3-3.5 5-6.5 5.5z"/></symbol>
+    <symbol id="i-pick" viewBox="0 0 24 24"><path d="M5 21 14 9.5M3.5 10.5C7 5 15 4.5 20.5 9"/></symbol>
+    <symbol id="i-fish" viewBox="0 0 24 24"><path d="M2.5 12c4-6 11-6 15 0-4 6-11 6-15 0zM17.5 12l4-4.5v9z"/><circle cx="7.5" cy="11" r=".8"/></symbol>
+    <symbol id="i-spear" viewBox="0 0 24 24"><path d="M4 20 19 5M19 5l-.5 6M19 5l-6 .5"/></symbol>
+    <symbol id="i-flint" viewBox="0 0 24 24"><path d="M12 2.5c5 5 7.5 10.5 4.5 15.5-1.2 2-7.8 2-9 0-3-5-.5-10.5 4.5-15.5zM12 8v8"/></symbol>
+    <symbol id="i-totem" viewBox="0 0 24 24"><path d="M9 3h6v18H9zM9 8.5h6M9 14h6M3.5 9l5.5 1.2M20.5 9 15 10.2"/><circle cx="11" cy="6" r=".6"/><circle cx="13" cy="6" r=".6"/></symbol>
+    <symbol id="i-meat" viewBox="0 0 24 24"><path d="M15 3.5a6 6 0 0 1 3.5 8.5l-5.5 2.5-3.5-3.5zM9.5 11 4 17M4 17l-1 2.5 2.5-1M4 17l2.5 2.5"/></symbol>
+    <symbol id="i-log" viewBox="0 0 24 24"><path d="M3 8h15v8H3zM18 8c2 0 3 1.8 3 4s-1 4-3 4"/><circle cx="18" cy="12" r="1.2"/></symbol>
+    <symbol id="i-pelt" viewBox="0 0 24 24"><path d="M5 5l4.5-2 2.5 2 2.5-2L19 5l-1.5 5 2.5 4-3 6-4-2-4 2-3-6 2.5-4z"/></symbol>
+    <symbol id="i-wheat" viewBox="0 0 24 24"><path d="M12 22V8M12 8c-2.5-.5-3.5-2.5-3.5-4.5 2.5.3 3.5 2 3.5 4.5zM12 8c2.5-.5 3.5-2.5 3.5-4.5-2.5.3-3.5 2-3.5 4.5zM12 14c-2.5-.5-3.5-2.5-3.5-4.5 2.5.3 3.5 2 3.5 4.5zM12 14c2.5-.5 3.5-2.5 3.5-4.5-2.5.3-3.5 2-3.5 4.5zM12 20c-2.5-.5-3.5-2.5-3.5-4.5 2.5.3 3.5 2 3.5 4.5zM12 20c2.5-.5 3.5-2.5 3.5-4.5-2.5.3-3.5 2-3.5 4.5z"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2.5 4.5 5.5v6c0 5 3.2 8.3 7.5 10 4.3-1.7 7.5-5 7.5-10v-6zM12 7v10M8 11h8"/></symbol>
+    <symbol id="i-herb" viewBox="0 0 24 24"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14zM5 19l8-8"/></symbol>
+  </defs>
+</svg>
+
+<main class="app">
+  <div class="update" id="update" role="status" hidden>
+    <span>Neue Version verfügbar.</span>
+    <button type="button" class="btn primary" id="reload">Jetzt laden</button>
+  </div>
+  <header class="top">
+    <div>
+      <h1>Steinzeitdorf<span class="env" id="envBadge" hidden></span></h1>
+      <p class="era" id="era"></p>
+    </div>
+    <div class="clock" id="clock"></div>
+  </header>
+
+  <section class="res" id="res" aria-label="Vorräte"></section>
+  <section class="folk" id="folk" aria-label="Bewohner"></section>
+
+  <div class="stage">
+    <div class="map">
+      <div class="card win" id="win" hidden></div>
+      <div class="alert" id="alert" role="alert" hidden></div>
+      <div class="board" id="board" data-s="0"></div>
+      <p class="muted" id="hint3d" hidden>Ziehen dreht die Ansicht, Mausrad, Zwei-Finger-Geste oder +/− zoomen, Tippen wählt ein Feld.</p>
+      <div class="ctl">
+        <div class="seg" id="seg" role="group" aria-label="Spielgeschwindigkeit">
+          <button type="button" data-sp="0">Pause</button>
+          <button type="button" data-sp="1">1×</button>
+          <button type="button" data-sp="2">2×</button>
+          <button type="button" data-sp="4">4×</button>
+        </div>
+        <div class="seg" id="zoomseg" role="group" aria-label="Zoom" hidden>
+          <button type="button" id="zout" aria-label="Herauszoomen">−</button>
+          <button type="button" id="zin" aria-label="Hineinzoomen">+</button>
+        </div>
+        <button type="button" class="btn" id="install" hidden>Installieren</button>
+        <button type="button" class="btn" id="reset">Neues Dorf</button>
+      </div>
+    </div>
+    <div class="side">
+      <section class="card" id="panel" aria-live="polite"></section>
+      <section class="card" id="goal"></section>
+      <section class="card shield" id="shield"></section>
+      <section class="card log"><h3>Chronik</h3><ol id="log" aria-live="polite"></ol></section>
+      <details class="card help">
+        <summary>Spielhilfe</summary>
+        <ul>
+          <li>Wald: Holzfäller und Jagdlager. Fluss: Fischerplatz. Felsen: Steinbruch. Wiese: Sammlerplatz, Acker, Hütten, Totempfahl.</li>
+          <li>Jeder Arbeitsplatz braucht einen freien Bewohner. Das Lagerfeuer bietet sechs Schlafplätze, jede Hütte vier weitere.</li>
+          <li>Neue Gebäude gibt es mit jeder Stufe. Horde: Holzfäller, Fischerplatz, Sammlerplatz, Palisade. Sippe: Steinbruch, Jagdlager, Hütte, Heilerhütte. Dorf: Acker, Faustkeil-Werkstatt, Totempfahl.</li>
+          <li>Jeder Bewohner isst pro Tag eine Portion Nahrung. Neue Menschen kommen, wenn Platz und Vorrat da sind.</li>
+          <li>Grundeinkommen: Jeder Bewohner sammelt von selbst 0,4 Nahrung und 0,4 Holz pro Tag, auch ohne Arbeitsplatz. Im Winter gibt es nur ein Viertel der Nahrung.</li>
+          <li>Im Winter bringt die Natur weniger. Leg vorher Vorräte an.</li>
+          <li>Ab Tag 10 drohen Wölfe, später Seuchen und Überfälle, im Winter Frostnächte. Palisaden, Heilerhütten, Hütten und Brennholz schützen. Die Karte „Schutz“ zeigt den Stand.</li>
+          <li>Eine Faustkeil-Werkstatt steigert die bis zu sechs angrenzenden Arbeitsplätze um 25 % (höchstens 50 %).</li>
+          <li>Als App: In Chrome und Edge über „Installieren“, in Safari über Teilen und „Zum Home-Bildschirm“. Danach läuft das Spiel auch offline.</li>
+        </ul>
+      </details>
+    </div>
+  </div>
+  <footer class="foot muted" id="foot"></footer>
+</main>
+
+<script src="vendor/three.min.js"></script>
+<script src="js/game.js"></script>
+<script src="js/pwa.js"></script>
+</body>
+</html>
