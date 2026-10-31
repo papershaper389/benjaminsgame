@@ -14,7 +14,7 @@ if (!['prod', 'beta'].includes(env) || !src || !dest || !sha || !date || !base) 
   process.exit(1);
 }
 
-const APP = ['index.html', 'env.js', 'manifest.webmanifest', 'sw.js', 'staticwebapp.config.json', 'nicht-freigeschaltet.html', '_headers', 'css', 'js', 'vendor', 'fonts', 'icons'];
+const APP = ['index.html', 'env.js', 'manifest.webmanifest', 'sw.js', 'staticwebapp.config.json', 'css', 'js', 'vendor', 'fonts', 'icons'];
 mkdirSync(dest, { recursive: true });
 for (const item of APP) cpSync(join(src, item), join(dest, item), { recursive: true });
 

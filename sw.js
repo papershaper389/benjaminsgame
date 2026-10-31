@@ -57,11 +57,8 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
   if (!req.url.startsWith(self.registration.scope)) return;
-  /* Anmeldung nie anfassen: weder abfangen noch zwischenspeichern */
-  if (url.pathname.startsWith('/.auth/') || url.pathname === '/login' || url.pathname === '/logout') return;
-
   if (req.mode === 'navigate') {
-    /* Online zuerst das Netz fragen, damit die Anmeldung greift. Nur ohne Verbindung kommt die gespeicherte Seite. */
+    /* Online zuerst das Netz fragen, damit Updates sofort greifen. Nur ohne Verbindung kommt die gespeicherte Seite. */
     event.respondWith(
       new Promise((resolve, reject) => {
         const timer = setTimeout(reject, 4000);

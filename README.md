@@ -20,41 +20,27 @@ Die beiden Versionen sind vollständig getrennt:
 - **Eigener Spielstand.** Der Spielstand liegt im Browser der jeweiligen Domain, der Schlüssel heißt `steinzeitdorf-v1:prod` bzw. `steinzeitdorf-v1:beta`.
 - **Erkennbar.** Beta hat blaue Icons mit „BETA“-Band, den Namen „Steinzeitdorf Beta“ und ein Abzeichen im Spiel. Die Fußzeile zeigt Datum und Commit der laufenden Version.
 
-## Zugriffsschutz
+## Anmeldung, Spielstand und Bestenliste (Supabase)
 
-Beide Static Web Apps sind hinter einer Anmeldung. Wer die Adresse öffnet, wird zu Microsoft geschickt und kommt nur hinein, wenn das Konto die Rolle `spieler` hat. Alle anderen sehen die Seite „Kein Zugang“ (`nicht-freigeschaltet.html`). Konfiguriert ist das in `staticwebapp.config.json`.
-
-Öffentlich bleiben nur `sw.js`, `manifest.webmanifest`, `icons/` und die Seite „Kein Zugang“. Sie enthalten kein Spiel, und der Browser braucht sie ohne Anmeldung, um die App zu installieren und zu aktualisieren.
-
-**Person freischalten** (pro Umgebung einzeln): Azure-Portal → Static Web App → **Rollenverwaltung** → **Einladen**. Anbieter `Microsoft Entra ID`, E-Mail-Adresse der Person, Rolle `spieler`, Gültigkeit wählen. Die Person öffnet den erzeugten Link und meldet sich an.
-
-**Offline:** Die installierte App startet auch ohne Netz aus dem Zwischenspeicher. Online wird bei jedem Start zuerst die Anmeldung geprüft.
-
-## Umzug auf Supabase und Cloudflare Pages (Branch `supabase`)
-
-Dieser Branch ersetzt Azure durch zwei Teile: Die Dateien liefert **Cloudflare Pages** aus, Anmeldung, Spielstand und Bestenliste übernimmt **Supabase**. Das Spiel läuft weiter offline. Erst nach der Anmeldung startet es.
+Die Dateien liefern weiter die zwei Azure Static Web Apps aus. Anmeldung, Spielstand und Bestenliste übernimmt **Supabase**. Das Spiel läuft weiter offline, startet aber erst nach der Anmeldung.
 
 **Wie es zusammenspielt**
 - `js/cloud.js` meldet an (E-Mail und Passwort oder Link per E-Mail), prüft die Freigabe, lädt den neueren von lokalem und Cloud-Stand und sichert alle paar Sekunden.
 - Der Spielstand liegt lokal und in der Tabelle `saves`, je Konto und Umgebung. Der jeweils neuere Stand gewinnt. Ohne Netz wird später nachgesichert.
 - Die Bestenliste (`scores`) zeigt alle Spieler mit Punkten aus Stufe, Bewohnern, Bauten und Steinkreis und aktualisiert sich live.
 - Wer spielen darf, steht in `allowed_emails`. Die Regeln in `supabase/schema.sql` erzwingen das in der Datenbank, nicht nur in der App.
-- Die Dateien selbst sind öffentlich abrufbar, sie enthalten aber keine Daten. Wer sie öffnet, sieht nur das Anmeldefenster.
+- Die Spieldateien sind öffentlich abrufbar, enthalten aber keine Daten. Wer sie öffnet, sieht nur das Anmeldefenster. `staticwebapp.config.json` setzt Sicherheitsheader samt Content-Security-Policy, die nur Verbindungen zu Supabase erlaubt.
 
-**Einrichtung Supabase** (je ein Projekt für Prod und Beta, oder ein gemeinsames)
+**Einrichtung Supabase**
 1. Projekt anlegen, im SQL Editor `supabase/schema.sql` ausführen.
 2. Authentication → Sign In / Providers: „Allow new users to sign up“ **ausschalten**.
-3. Authentication → URL Configuration: Site URL und Redirect URLs auf die Adressen der App setzen.
-4. Spieler einladen: Authentication → Users → Invite user, danach die Adresse in `allowed_emails` eintragen.
-5. Project URL und den öffentlichen Schlüssel (`sb_publishable_…` oder „anon public“) in `supabase/public-config.json` eintragen. Der geheime Schlüssel (`sb_secret_…` oder `service_role`) gehört nie in die App.
+3. Eigenes Konto anlegen (Authentication → Users → Add user, mit „Auto Confirm User“) und dieselbe Adresse in `allowed_emails` eintragen.
+4. Authentication → URL Configuration: Site URL und Redirect URLs auf die Adressen der beiden Static Web Apps setzen.
+5. Project URL und öffentlichen Schlüssel (`sb_publishable_…`) in `supabase/public-config.json` eintragen. Der geheime Schlüssel (`sb_secret_…` oder `service_role`) gehört nie in die App.
 
-**Einrichtung Cloudflare Pages**
-1. Pages-Projekt aus diesem GitHub-Repository anlegen. Produktions-Branch `main`.
-2. Build-Befehl `node scripts/cf-build.mjs`, Ausgabeverzeichnis `dist`.
-3. Keine Variablen nötig: Der Build liest URL und öffentlichen Schlüssel aus `supabase/public-config.json`. Wer Prod und Beta auf getrennte Supabase-Projekte legen will, setzt `SUPABASE_URL` und `SUPABASE_ANON_KEY` getrennt für Produktion und Vorschau, sie haben Vorrang. Der Branch `beta` wird als Vorschau veröffentlicht.
-4. Optional: Cloudflare Access davor, wenn auch die Dateien nicht öffentlich sein sollen.
+**Person freischalten:** Konto unter Authentication → Users anlegen (oder einladen), dann die Adresse in `allowed_emails` eintragen.
 
-Die Azure-Workflows und `staticwebapp.config.json` bleiben, bis der Umzug abgeschlossen ist.
+**Getrennte Daten:** Prod und Beta teilen das Supabase-Projekt, speichern aber getrennt (Spalte `env`). Wer sie auf zwei Projekte legen will, setzt `SUPABASE_URL` und `SUPABASE_ANON_KEY` als Umgebungsvariablen im jeweiligen Workflow-Schritt, sie haben Vorrang vor der Datei.
 
 ## Arbeitsablauf
 
