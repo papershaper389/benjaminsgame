@@ -33,6 +33,8 @@
     <symbol id="i-fish" viewBox="0 0 24 24"><path d="M2.5 12c4-6 11-6 15 0-4 6-11 6-15 0zM17.5 12l4-4.5v9z"/><circle cx="7.5" cy="11" r=".8"/></symbol>
     <symbol id="i-spear" viewBox="0 0 24 24"><path d="M4 20 19 5M19 5l-.5 6M19 5l-6 .5"/></symbol>
     <symbol id="i-flint" viewBox="0 0 24 24"><path d="M12 2.5c5 5 7.5 10.5 4.5 15.5-1.2 2-7.8 2-9 0-3-5-.5-10.5 4.5-15.5zM12 8v8"/></symbol>
+    <symbol id="i-store" viewBox="0 0 24 24"><path d="M3.5 10 12 3.5l8.5 6.5M5.5 9v11h13V9M9.5 20v-6h5v6M7 20v1.5M17 20v1.5"/></symbol>
+    <symbol id="i-henge" viewBox="0 0 24 24"><path d="M2.5 20h19M5 20V9.5M9.5 20V9.5M14.5 20V9.5M19 20V9.5M3.5 9.5h7M13.5 9.5h7M7 7h10"/></symbol>
     <symbol id="i-totem" viewBox="0 0 24 24"><path d="M9 3h6v18H9zM9 8.5h6M9 14h6M3.5 9l5.5 1.2M20.5 9 15 10.2"/><circle cx="11" cy="6" r=".6"/><circle cx="13" cy="6" r=".6"/></symbol>
     <symbol id="i-meat" viewBox="0 0 24 24"><path d="M15 3.5a6 6 0 0 1 3.5 8.5l-5.5 2.5-3.5-3.5zM9.5 11 4 17M4 17l-1 2.5 2.5-1M4 17l2.5 2.5"/></symbol>
     <symbol id="i-log" viewBox="0 0 24 24"><path d="M3 8h15v8H3zM18 8c2 0 3 1.8 3 4s-1 4-3 4"/><circle cx="18" cy="12" r="1.2"/></symbol>
@@ -58,6 +60,7 @@
 
   <section class="res" id="res" aria-label="Vorräte"></section>
   <section class="folk" id="folk" aria-label="Bewohner"></section>
+  <section class="card crew" id="crew" aria-label="Steinkreis, Bauarbeiter" hidden></section>
 
   <div class="stage">
     <div class="map">
@@ -90,10 +93,11 @@
         <ul>
           <li>Wald: Holzfäller und Jagdlager. Fluss: Fischerplatz. Felsen: Steinbruch. Wiese: Sammlerplatz, Acker, Hütten, Totempfahl.</li>
           <li>Jeder Arbeitsplatz braucht einen freien Bewohner. Das Lagerfeuer bietet sechs Schlafplätze, jede Hütte vier weitere.</li>
-          <li>Neue Gebäude gibt es mit jeder Stufe. Horde: Holzfäller, Fischerplatz, Sammlerplatz, Palisade. Sippe: Steinbruch, Jagdlager, Hütte, Heilerhütte. Dorf: Acker, Faustkeil-Werkstatt, Totempfahl.</li>
+          <li>Neue Gebäude gibt es mit jeder Stufe. Horde: Holzfäller, Fischerplatz, Sammlerplatz, Palisade. Sippe: Steinbruch, Jagdlager, Hütte, Heilerhütte. Dorf: Acker, Faustkeil-Werkstatt, Totempfahl, Steinkreis. Das Vorratslager gibt es schon ab der Sippe.</li>
           <li>Jeder Bewohner isst pro Tag eine Portion Nahrung. Neue Menschen kommen, wenn Platz und Vorrat da sind.</li>
           <li>Grundeinkommen: Jeder Bewohner sammelt von selbst 0,4 Nahrung und 0,4 Holz pro Tag, auch ohne Arbeitsplatz. Im Winter gibt es nur ein Viertel der Nahrung.</li>
-          <li>Im Winter bringt die Natur weniger. Leg vorher Vorräte an.</li>
+          <li>Im Winter bringt die Natur weniger. Leg vorher Vorräte an. Ohne Vorratslager fasst das Dorf nur wenig, alles darüber verdirbt. Die Zahl hinter dem Vorrat zeigt den Lagerraum.</li>
+          <li>Steinkreis: Eine Großbaustelle auf einer Wiese. Bauarbeiter verteilst du mit + und − in der Karte „Steinkreis“. Sie fehlen den Arbeitsplätzen (die neuesten stehen zuerst still), essen etwas mehr und bauen im Winter nur halb so schnell. Das Werk verbraucht Stein und Holz. Im Herbst und Winter bleibt das Brennholz gegen Frost unangetastet.</li>
           <li>Ab Tag 10 drohen Wölfe, später Seuchen und Überfälle, im Winter Frostnächte. Palisaden, Heilerhütten, Hütten und Brennholz schützen. Die Karte „Schutz“ zeigt den Stand.</li>
           <li>Eine Faustkeil-Werkstatt steigert die bis zu sechs angrenzenden Arbeitsplätze um 25 % (höchstens 50 %).</li>
           <li>Als App: In Chrome und Edge über „Installieren“, in Safari über Teilen und „Zum Home-Bildschirm“. Danach läuft das Spiel auch offline.</li>

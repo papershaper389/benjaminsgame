@@ -297,3 +297,18 @@ h1 { font: 400 clamp(30px, 8vw, 42px)/1 "Alfa Slab One", Georgia, serif; letter-
 .foot { text-align: center; padding-top: 4px; }
 .foot a { color: inherit; text-decoration: underline; }
 .board.gl canvas.gl, .board { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+
+.rc b i.cap { font-style: normal; font-size: 11px; font-weight: 400; color: var(--muted); }
+.rc b i.cap.full { color: var(--red); font-weight: 700; }
+.pip.build { background: var(--r-stone); border-color: var(--r-stone); }
+.crew { display: grid; gap: 8px; }
+.crew[hidden] { display: none; }
+.crew .ch { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.crew h3 { margin: 0; }
+.crew .bar { margin-bottom: 0; }
+.crew p { margin: 0; font-size: 13px; }
+.stepper { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.stepper .btn { min-width: 44px; min-height: 44px; padding: 0; font-size: 22px; line-height: 1; }
+.stepper .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.stepper output { font-variant-numeric: tabular-nums; }
+.ok { color: var(--good); }

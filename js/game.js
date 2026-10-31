@@ -41,9 +41,16 @@
     jagd: { unlock: 1, name: 'Jagdlager', icon: 'spear', col: 'r-food', terrain: ['wald', 'wiese'], cost: { wood: 6, stone: 2 }, out: { food: 2, fur: 0.5 }, outBy: { wald: { food: 3, fur: 0.8 } }, sm: [1, 1, 1.1, 0.9], desc: 'Speerjäger bringen Fleisch und Felle. Im Wald fällt die Beute größer aus.' },
     huette: { unlock: 1, name: 'Hütte', icon: 'hut', col: 'r-fur', house: 4, terrain: ['wiese', 'wald'], cost: { wood: 10, fur: 1 }, tip: '+4 Schlafplätze', desc: 'Fellzelt auf Stangen. Vier weitere Schlafplätze.' },
     werk: { unlock: 2, name: 'Faustkeil-Werkstatt', icon: 'flint', col: 'r-stone', terrain: ['wiese', 'wald', 'fels'], cost: { wood: 8, stone: 6 }, tip: '+25 % für Nachbarfelder', desc: 'Hier werden Faustkeile geschlagen. Steigert angrenzende Arbeitsplätze um 25 %, höchstens 50 %.' },
+    lager: { unlock: 1, name: 'Vorratslager', icon: 'store', col: 'r-wood', terrain: ['wiese', 'wald'], cost: { wood: 12, stone: 3 }, tip: 'Mehr Platz für Vorräte, schützt vor Raub und Sturm', desc: 'Ein Pfahlspeicher aus Stämmen und Fell. Ohne Lager verderben Überschüsse; jedes Lager nimmt 60 Nahrung, 50 Holz, 40 Stein und 15 Felle auf und macht Diebe und Stürme harmloser.' },
+    monument: { unlock: 2, name: 'Steinkreis', icon: 'henge', col: 'accent', unique: true, terrain: ['wiese'], cost: { wood: 10 }, tip: 'Großbaustelle: Bauarbeiter fehlen im Alltag', desc: 'Ein Kreis aus mächtigen Steinen, wie ihn kein Stamm der Gegend je sah. Das Werk verlangt viele Hände, Stein und Holz. Wer hier baut, fehlt bei der täglichen Arbeit.' },
     totem: { unlock: 2, name: 'Totempfahl', icon: 'totem', col: 'accent', unique: true, terrain: ['wiese'], cost: { wood: 20, stone: 20, fur: 6 }, tip: 'Das Wahrzeichen des Stammes', desc: 'Der Totempfahl hält die Geschichte des Stammes fest.' }
   };
-  const ORDER = ['holz', 'fisch', 'sammler', 'acker', 'stein', 'jagd', 'huette', 'heiler', 'palisade', 'werk', 'totem'];
+  const ORDER = ['holz', 'fisch', 'sammler', 'acker', 'stein', 'jagd', 'huette', 'lager', 'heiler', 'palisade', 'werk', 'totem', 'monument'];
+  /* Lagerraum: Grundplatz am Feuer plus je Vorratslager */
+  const CAP0 = { food: 50, wood: 40, stone: 30, fur: 12 }, CAPL = { food: 60, wood: 50, stone: 40, fur: 15 };
+  /* Steinkreis: Arbeitstage, Stein und Holz für das ganze Werk, sichtbare Bauschritte */
+  const MON = { work: 150, stone: 100, wood: 40, steps: 19 };
+  const BUILD_FOOD = 0.3;
   const unlockNames = (era) => ORDER.filter((k) => B[k].unlock === era).map((k) => B[k].name).join(', ');
 
   /* ---------- Karte ---------- */
@@ -111,7 +118,7 @@
   }
 
   /* ---------- Zustand ---------- */
-  let state, sel = null, lastSig = '', timer = null, resetArm = false;
+  let state, sel = null, lastSig = '', crewSig = '', timer = null, resetArm = false;
 
   function fresh() {
     const seed = Math.floor(Math.random() * 1e9);
@@ -120,7 +127,8 @@
       res: { food: 24, wood: 12, stone: 0, fur: 0 },
       tiles: genTiles(seed), seq: 2,
       log: [{ d: 1, t: 'Eine kleine Gruppe erreicht ein Tal mit Fluss und Wald. Das Lagerfeuer brennt.' }],
-      speed: 1, paused: false, won: false, wonSeen: false
+      speed: 1, paused: false, won: false, wonSeen: false,
+      crew: 0, mw: 0, mDone: false, mSeen: false
     };
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
@@ -160,21 +168,26 @@
   function compute() {
     const s = season();
     const prod = { food: 0, wood: 0, stone: 0, fur: 0 };
-    let housing = 0, count = 0;
+    let housing = 0, count = 0, lagers = 0, monI = -1;
     const prods = [];
     state.tiles.forEach((q, i) => {
       if (!q.b) return;
       const b = B[q.b];
       count++;
       if (b.house) housing += b.house;
+      if (q.b === 'lager') lagers++;
+      if (q.b === 'monument') monI = i;
       if (b.out) prods.push(i);
     });
     prods.sort((a, b) => state.tiles[a].n - state.tiles[b].n);
+    const mon = monI >= 0 && !state.mDone;
+    const builders = mon ? Math.min(state.crew, state.pop) : 0;
+    const avail = state.pop - builders;
     const info = {};
     let employed = 0;
     prods.forEach((i) => {
       const q = state.tiles[i], b = B[q.b];
-      const active = employed < state.pop;
+      const active = employed < avail;
       if (active) employed++;
       const base = (b.outBy && b.outBy[q.t]) || b.out;
       const n = adj(i).filter((j) => state.tiles[j].b === 'werk').length;
@@ -190,9 +203,28 @@
     const base = baseIncome();
     prod.food += base.food;
     prod.wood += base.wood;
-    return { prod: prod, housing: housing, count: count, employed: employed, info: info, base: base };
+    const cap = {};
+    RES.forEach((r) => { cap[r.k] = CAP0[r.k] + CAPL[r.k] * lagers; });
+    return {
+      prod: prod, housing: housing, count: count, employed: employed, info: info, base: base,
+      cap: cap, lagers: lagers, mon: mon, monI: monI, builders: builders, avail: avail,
+      stalled: prods.length - employed, eat: state.pop + builders * BUILD_FOOD,
+      mw: mon ? monWork(builders, state.res) : null
+    };
   }
 
+  /* Bauleistung des Tages: begrenzt durch Bauarbeiter, Winter und das Material, das vorhanden ist */
+  function monWork(n, res) {
+    const winter = season() === 3 ? 0.5 : 1;
+    const want = Math.max(0, Math.min(n * winter, MON.work - state.mw));
+    const spare = { stone: res.stone, wood: season() >= 2 ? Math.max(0, res.wood - frostNeed(counts())) : res.wood };
+    let w = want, lim = null;
+    ['stone', 'wood'].forEach((r) => {
+      const can = spare[r] / (MON[r] / MON.work);
+      if (can < w) { w = can; lim = r; }
+    });
+    return { want: want, w: Math.max(0, w), lim: lim, winter: winter < 1 };
+  }
   function canAfford(cost) {
     for (const k in cost) if (state.res[k] < cost[k]) return false;
     return true;
@@ -200,11 +232,13 @@
 
   /* ---------- Ablauf ---------- */
   function tick() {
-    if (state.won && !state.wonSeen) return;
+    if ((state.won && !state.wonSeen) || (state.mDone && !state.mSeen)) return;
     const c = compute();
     state.day++;
+    const before = {};
+    for (const k in state.res) before[k] = state.res[k];
     for (const k in c.prod) state.res[k] += c.prod[k];
-    state.res.food -= state.pop;
+    state.res.food -= c.eat;
     if (state.res.food < 0) {
       state.res.food = 0;
       if (state.pop > 1) { state.pop--; say('Hunger. Ein Bewohner zieht fort.'); }
@@ -213,6 +247,25 @@
       state.pop++;
       say(pick(['Ein Kind wurde geboren.', 'Ein Wanderer hat sich dem Dorf angeschlossen.']));
     }
+    if (c.mon) {
+      const m = monWork(c.builders, state.res);
+      if (m.w > 0) {
+        state.mw += m.w;
+        state.res.stone -= m.w * MON.stone / MON.work;
+        state.res.wood -= m.w * MON.wood / MON.work;
+      }
+      if (state.mw >= MON.work - 1e-6) {
+        state.mw = MON.work; state.mDone = true; state.mSeen = false; state.crew = 0; state.paused = true;
+        say('Der letzte Stein sitzt. Der Steinkreis ist vollendet.');
+      } else if (m.lim && c.builders > 0 && state.day % 4 === 0) {
+        say('Die Bauarbeiter warten auf ' + (m.lim === 'stone' ? 'Stein' : 'Holz') + '.');
+      }
+    }
+    /* Mehr als das Lager fasst, verdirbt; Altbestände darüber bleiben unangetastet */
+    RES.forEach((r) => {
+      const lim = Math.max(c.cap[r.k], before[r.k]);
+      if (state.res[r.k] > lim) state.res[r.k] = lim;
+    });
     if (season() === 3 && dayIn() === 1) say('Der Winter beginnt. Eine Frostnacht droht, halte Brennholz bereit.');
     maybeEvent(c);
     checkEra();
@@ -225,11 +278,12 @@
   /* ---------- Gefahren und Schutz ---------- */
   const protection = (n) => 1 - Math.pow(0.6, n);
   function counts() {
-    const k = { pal: 0, heal: 0, hut: 0 };
+    const k = { pal: 0, heal: 0, hut: 0, lag: 0 };
     state.tiles.forEach((q) => {
       if (q.b === 'palisade') k.pal++;
       else if (q.b === 'heiler') k.heal++;
       else if (q.b === 'huette') k.hut++;
+      else if (q.b === 'lager') k.lag++;
     });
     return k;
   }
@@ -283,7 +337,8 @@
     const dead = lose(Math.max(1, Math.round(state.pop * d.frac)));
     let extra = '';
     if (e === 'raid') {
-      const f = Math.floor(state.res.food * 0.25), w = Math.floor(state.res.wood * 0.25);
+      const keep = Math.pow(0.7, k.lag);
+      const f = Math.floor(state.res.food * 0.25 * keep), w = Math.floor(state.res.wood * 0.25 * keep);
       state.res.food -= f; state.res.wood -= w;
       extra = ' Sie rauben ' + f + ' Nahrung und ' + w + ' Holz.';
     }
@@ -296,6 +351,7 @@
     if (Math.random() > 0.09) return;
     const opts = ['pilze', 'sturm', 'mammut'];
     if (state.pop < c.housing) opts.push('wanderer');
+    if (state.mDone && state.pop < c.housing) opts.push('pilger', 'pilger');
     const e = pick(opts);
     if (e === 'mammut') {
       if (state.tiles.some((q) => q.b === 'jagd')) {
@@ -306,9 +362,12 @@
       state.res.food += 8;
       say('Nach dem Regen wachsen Pilze am Waldrand. +8 Nahrung.');
     } else if (e === 'sturm') {
-      const lose = Math.min(5, Math.floor(state.res.wood));
+      const lag = counts().lag, lose = Math.min(Math.max(0, 5 - 2 * lag), Math.floor(state.res.wood));
       if (lose > 0) { state.res.wood -= lose; say('Ein Sturm weht ' + lose + ' Holz ins Tal hinaus.'); }
-      else say('Ein Sturm zieht übers Tal. Es gibt nichts zu verlieren.');
+      else say(lag ? 'Ein Sturm zieht übers Tal. Das Vorratslager hält, nichts geht verloren.' : 'Ein Sturm zieht übers Tal. Es gibt nichts zu verlieren.');
+    } else if (e === 'pilger') {
+      state.pop++;
+      say('Pilger ziehen zum Steinkreis. Einer von ihnen bleibt im Dorf.');
     } else if (e === 'wanderer') {
       state.pop++;
       say('Ein Wanderer sucht Schutz am Feuer und bleibt.');
@@ -344,15 +403,17 @@
     const b = B[key];
     if (!b || b.build === false || b.terrain.indexOf(q.t) < 0 || b.unlock > state.era || !canAfford(b.cost)) return;
     if (b.unique && state.tiles.some((t) => t.b === key)) return;
-    if (b.out && compute().employed >= state.pop) return;
+    const cc = compute();
+    if (b.out && cc.employed >= cc.avail) return;
     for (const k in b.cost) state.res[k] -= b.cost[k];
     q.b = key; q.n = state.seq++;
+    if (key === 'monument') { state.crew = Math.min(2, state.pop); crewSig = ''; }
     checkEra();
     save(); lastSig = ''; render(); loop();
   }
   function demolish() {
     const q = state.tiles[sel];
-    if (!q || !q.b || q.b === 'feuer' || q.b === 'totem') return;
+    if (!q || !q.b || q.b === 'feuer' || q.b === 'totem' || q.b === 'monument') return;
     const b = B[q.b];
     ['wood', 'stone'].forEach((k) => { if (b.cost[k]) state.res[k] += Math.floor(b.cost[k] / 2); });
     q.b = null; q.n = 0;
@@ -370,7 +431,7 @@
     return best;
   }
   function newGame() {
-    state = fresh(); sel = nearest('wald'); lastSig = '';
+    state = fresh(); sel = nearest('wald'); lastSig = ''; crewSig = '';
     save(); render(); loop();
   }
 
@@ -407,15 +468,17 @@
   }
   function renderRes(c) {
     $('res').innerHTML = RES.map((r) => {
-      const rate = r.k === 'food' ? c.prod.food - state.pop : c.prod[r.k];
+      const rate = r.k === 'food' ? c.prod.food - c.eat : c.prod[r.k];
+      const full = state.res[r.k] >= c.cap[r.k] - 0.01;
       const cls = rate < -0.05 ? 'neg' : rate > 0.05 ? 'pos' : '';
       const sign = rate < -0.05 ? '−' : '+';
-      return '<div class="rc"><span class="rl">' + ic(r.i, 'color:var(--r-' + r.k + ')') + '<span>' + r.n + '</span></span><b>' + Math.floor(state.res[r.k]) + '</b><small class="' + cls + '">' + sign + fmt(Math.abs(rate)) + '/Tag</small></div>';
+      const note = full && rate > 0.05 ? '<small class="neg">Lager voll</small>' : '<small class="' + cls + '">' + sign + fmt(Math.abs(rate)) + '/Tag</small>';
+      return '<div class="rc"><span class="rl">' + ic(r.i, 'color:var(--r-' + r.k + ')') + '<span>' + r.n + '</span></span><b>' + Math.floor(state.res[r.k]) + '<i class="cap' + (full ? ' full' : '') + '" title="Lagerraum">/' + c.cap[r.k] + '</i></b>' + note + '</div>';
     }).join('');
   }
   function renderFolk(c) {
-    const free = state.pop - c.employed;
-    const net = c.prod.food - state.pop;
+    const free = c.avail - c.employed;
+    const net = c.prod.food - c.eat;
     let warn = '';
     if (net < -0.05) {
       const d = Math.floor(state.res.food / -net);
@@ -423,8 +486,8 @@
     }
     let pips = '';
     const total = Math.max(c.housing, state.pop);
-    for (let i = 0; i < total; i++) pips += '<span class="pip ' + (i < c.employed ? 'job' : i < state.pop ? 'idle' : 'free') + '"></span>';
-    $('folk').innerHTML = '<div class="fh"><b>' + state.pop + ' ' + pl(state.pop, 'Bewohner', 'Bewohner') + '</b><span class="muted">' + c.employed + ' bei der Arbeit · ' + free + ' frei · ' + c.housing + ' Schlafplätze · Grundeinkommen +' + fmt(c.base.food) + ' Nahrung, +' + fmt(c.base.wood) + ' Holz</span>' + warn + '</div><div class="pips" aria-hidden="true">' + pips + '</div>';
+    for (let i = 0; i < total; i++) pips += '<span class="pip ' + (i < c.employed ? 'job' : i < c.employed + c.builders ? 'build' : i < state.pop ? 'idle' : 'free') + '"></span>';
+    $('folk').innerHTML = '<div class="fh"><b>' + state.pop + ' ' + pl(state.pop, 'Bewohner', 'Bewohner') + '</b><span class="muted">' + c.employed + ' bei der Arbeit · ' + (c.builders ? c.builders + ' am Steinkreis · ' : '') + free + ' frei · ' + c.housing + ' Schlafplätze · Grundeinkommen +' + fmt(c.base.food) + ' Nahrung, +' + fmt(c.base.wood) + ' Holz</span>' + warn + '</div><div class="pips" aria-hidden="true">' + pips + '</div>';
   }
   function renderTiles(c) {
     state.tiles.forEach((q, i) => {
@@ -454,6 +517,18 @@
       if (f.bonus) h += '<li>Werkstatt nebenan: +' + Math.round(f.bonus * 100) + ' %</li>';
       if (f.sm !== 1) h += '<li>' + SEASONS[season()] + ': ×' + fmt(f.sm) + '</li>';
       h += '</ul>';
+    } else if (q.b === 'monument') {
+      const pct = Math.round(100 * state.mw / MON.work), rest = MON.work - state.mw;
+      h += '<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div><ul class="facts">';
+      if (state.mDone) h += '<li><b class="pos">Vollendet</b></li><li>Pilger ziehen ins Tal und bleiben manchmal.</li>';
+      else {
+        h += '<li><b>' + pct + ' %</b> · ' + fmt(state.mw) + ' von ' + MON.work + ' Arbeitstagen</li>';
+        h += '<li>Noch nötig: ' + Math.ceil(rest * MON.stone / MON.work) + ' Stein, ' + Math.ceil(rest * MON.wood / MON.work) + ' Holz</li>';
+        h += '<li>' + c.builders + ' ' + pl(c.builders, 'Bauarbeiter', 'Bauarbeiter') + ', verteilt wird oben unter „Steinkreis“</li>';
+      }
+      h += '</ul>';
+    } else if (q.b === 'lager') {
+      h += '<ul class="facts"><li>Jedes Lager: +' + CAPL.food + ' Nahrung, +' + CAPL.wood + ' Holz, +' + CAPL.stone + ' Stein, +' + CAPL.fur + ' Felle</li><li>Raub und Sturm treffen weniger</li></ul>';
     } else if (b.house) {
       h += '<ul class="facts"><li>+' + b.house + ' Schlafplätze</li></ul>';
     } else if (b.tip) {
@@ -468,7 +543,7 @@
     if (b.unlock > state.era) why = 'Frei ab Stufe ' + ERAS[b.unlock] + '.';
     else if (b.unique && state.tiles.some((t) => t.b === key)) why = 'Steht bereits.';
     else if (missing.length) why = 'Es fehlt: ' + missing.join(', ');
-    else if (b.out && c.employed >= state.pop) why = 'Kein freier Bewohner.';
+    else if (b.out && c.employed >= c.avail) why = c.builders ? 'Kein freier Bewohner. Zieh Bauarbeiter ab.' : 'Kein freier Bewohner.';
     return '<button type="button" class="opt" data-build="' + key + '"' + (why ? ' disabled' : '') + '>' +
       '<span style="color:var(--' + b.col + ')">' + ic(b.icon) + '</span>' +
       '<span><b>' + b.name + '</b><small>' + tip(key, q.t) + '</small><span class="costs">' + (costHTML(b.cost) || '<span class="cost">Kostenlos</span>') + '</span>' +
@@ -476,7 +551,7 @@
   }
   function renderPanel(c) {
     const q = sel == null ? null : state.tiles[sel];
-    const sig = JSON.stringify([sel, q && q.b, RES.map((r) => Math.floor(state.res[r.k])), c.employed, state.pop, sel != null && c.info[sel] ? c.info[sel].active : 0, season(), state.era]);
+    const sig = JSON.stringify([sel, q && q.b, RES.map((r) => Math.floor(state.res[r.k])), c.employed, state.pop, c.cap.food, state.crew, Math.floor(state.mw), state.mDone, sel != null && c.info[sel] ? c.info[sel].active : 0, season(), state.era]);
     if (sig === lastSig) return;
     lastSig = sig;
     const el = $('panel');
@@ -489,7 +564,7 @@
     let h = '<div class="ph"><span style="color:var(--' + (q.b ? B[q.b].col : 'muted') + ')">' + ic(q.b ? B[q.b].icon : T.i) + '</span><div><h2>' + (q.b ? B[q.b].name : T.n) + '</h2><p class="muted">' + T.n + ' · Reihe ' + y + ', Spalte ' + x + '</p></div></div>';
     if (q.b) {
       h += infoHTML(sel, c);
-      if (q.b !== 'feuer' && q.b !== 'totem') {
+      if (q.b !== 'feuer' && q.b !== 'totem' && q.b !== 'monument') {
         const b = B[q.b];
         const back = ['wood', 'stone'].filter((k) => b.cost[k]).map((k) => Math.floor(b.cost[k] / 2) + ' ' + NAMES[k]).join(', ');
         h += '<button type="button" class="btn" data-demolish="1">Abreißen' + (back ? ' (+' + back + ')' : '') + '</button>';
@@ -506,13 +581,41 @@
     if (e === 0) g = { t: 'Sippe', u: unlockNames(1), items: [['Bewohner', state.pop, 6]] };
     else if (e === 1) g = { t: 'Dorf', u: unlockNames(2), items: [['Bewohner', state.pop, 9], ['Bauten', c.count, 7]] };
     else if (e === 2) g = { t: 'Stamm', u: '', items: [['Bewohner', state.pop, 14], ['Totempfahl', tot ? 1 : 0, 1]] };
+    let monHtml = '';
+    if (e >= 2) {
+      if (state.mDone) monHtml = '<p class="ok" style="margin-top:10px">✓ Steinkreis vollendet</p>';
+      else if (c.monI >= 0) monHtml = '<p style="margin-top:10px"><b>Steinkreis ' + Math.round(100 * state.mw / MON.work) + ' %</b> <span class="muted">· Bauarbeiter verteilst du oben</span></p>';
+      else monHtml = '<p class="muted" style="margin-top:10px">Großes Vorhaben: der Steinkreis. Wähle ein Wiesenfeld und baue die Baustelle.</p>';
+    }
     if (!g) {
-      $('goal').innerHTML = '<h3>Ziel erreicht</h3><p class="muted">Der Stamm steht. Baut weiter, solange das Feuer brennt.</p>';
+      $('goal').innerHTML = '<h3>Ziel erreicht</h3><p class="muted">Der Stamm steht. Baut weiter, solange das Feuer brennt.</p>' + monHtml;
       return;
     }
     const pct = Math.round(100 * g.items.reduce((a, it) => a + Math.min(it[1] / it[2], 1), 0) / g.items.length);
     $('goal').innerHTML = '<h3>Nächstes Ziel: ' + g.t + '</h3><div class="bar"><i style="width:' + pct + '%"></i></div><ul class="chk">' +
-      g.items.map((it) => '<li class="' + (it[1] >= it[2] ? 'ok' : '') + '">' + (it[1] >= it[2] ? '✓' : '○') + ' ' + it[0] + ' ' + Math.min(it[1], it[2]) + '/' + it[2] + '</li>').join('') + '</ul>' + (g.u ? '<p class="muted" style="margin-top:10px">Schaltet frei: ' + g.u + '</p>' : '');
+      g.items.map((it) => '<li class="' + (it[1] >= it[2] ? 'ok' : '') + '">' + (it[1] >= it[2] ? '✓' : '○') + ' ' + it[0] + ' ' + Math.min(it[1], it[2]) + '/' + it[2] + '</li>').join('') + '</ul>' + (g.u ? '<p class="muted" style="margin-top:10px">Schaltet frei: ' + g.u + '</p>' : '') + monHtml;
+  }
+  function renderCrew(c) {
+    const el = $('crew');
+    if (!c.mon) { el.hidden = true; crewSig = ''; return; }
+    const m = c.mw;
+    const sig = JSON.stringify([state.crew, c.builders, state.pop, Math.floor(state.mw), Math.round(m.w * 10), m.lim, m.winter, c.stalled, state.mw > 0]);
+    if (sig === crewSig) return;
+    crewSig = sig;
+    el.hidden = false;
+    const pct = Math.round(100 * state.mw / MON.work);
+    const lines = [];
+    lines.push('Bauleistung heute etwa +' + fmt(m.w) + ' von ' + MON.work + ' Arbeitstagen');
+    if (m.winter) lines.push('Im Winter nur halbe Leistung');
+    if (m.lim && c.builders > 0) lines.push('<span class="warn">Es fehlt ' + (m.lim === 'stone' ? 'Stein' : 'Holz') + ', die Bauarbeiter warten</span>');
+    if (c.builders > 0) lines.push('Bauarbeiter essen ' + fmt(BUILD_FOOD) + ' Nahrung mehr');
+    if (c.stalled > 0) lines.push('<span class="warn">' + c.stalled + ' ' + pl(c.stalled, 'Arbeitsplatz steht', 'Arbeitsplätze stehen') + ' still</span>');
+    el.innerHTML = '<div class="ch"><h3>Steinkreis</h3><span><b>' + pct + ' %</b></span></div>' +
+      '<div class="bar" role="progressbar" aria-label="Baufortschritt" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div>' +
+      '<div class="stepper"><button type="button" class="btn" data-crew="-1" aria-label="Einen Bauarbeiter abziehen"' + (state.crew <= 0 ? ' disabled' : '') + '>−</button>' +
+      '<output aria-live="polite"><b>' + c.builders + '</b> von ' + state.pop + ' ' + pl(state.pop, 'Bewohner', 'Bewohnern') + ' bauen</output>' +
+      '<button type="button" class="btn" data-crew="1" aria-label="Einen Bauarbeiter hinzufügen"' + (state.crew >= state.pop ? ' disabled' : '') + '>+</button></div>' +
+      '<p class="muted">' + lines.join(' · ') + '</p>';
   }
   function renderShield() {
     const k = counts(), pw = Math.round(100 * protection(k.pal)), ph = Math.round(100 * protection(k.heal));
@@ -549,13 +652,16 @@
     if (state.won && !state.wonSeen) {
       w.hidden = false;
       w.innerHTML = '<h2>Der Stamm steht</h2><p>Nach ' + (state.day - 1) + ' Tagen ragt der Totempfahl über das Tal. ' + state.pop + ' Menschen leben hier.</p><div class="row"><button type="button" class="btn primary" data-win="keep">Weiterspielen</button><button type="button" class="btn" data-win="again">Neues Dorf</button></div>';
+    } else if (state.mDone && !state.mSeen) {
+      w.hidden = false;
+      w.innerHTML = '<h2>Der Steinkreis steht</h2><p>Nach ' + (state.day - 1) + ' Tagen erhebt sich der Kreis aus Stein über dem Tal. ' + state.pop + ' Menschen haben ihn gesehen, und bald kommen Pilger aus fernen Tälern.</p><div class="row"><button type="button" class="btn primary" data-win="keep">Weiterspielen</button><button type="button" class="btn" data-win="again">Neues Dorf</button></div>';
     } else w.hidden = true;
   }
   function render() {
     const c = compute();
     renderHead(c); renderRes(c); renderFolk(c); renderTiles(c);
     if (scene3d) scene3d.sync(c);
-    renderPanel(c); renderGoal(c); renderShield(); renderLog(); renderCtl(); renderWin();
+    renderCrew(c); renderPanel(c); renderGoal(c); renderShield(); renderLog(); renderCtl(); renderWin();
   }
   function floaters(c) {
     if (reduce) return;
@@ -806,7 +912,54 @@
       M(G.sph, mBerry2, 0.07, 0.07, 0.07, 0.3, 0.1, 0.14, p);
       M(G.sph, mGreen, 0.08, 0.1, 0.08, 0.28, 0.1, -0.1, p);
     }
-    const BLD = { palisade: bPalisade, heiler: bHeiler, acker: bAcker, feuer: bFeuer, sammler: bSammler, holz: bHolz, stein: bStein, fisch: bFisch, jagd: bJagd, huette: bHuette, werk: bWerk, totem: bTotem };
+    function bLager(p) {
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach((d) => M(G.cyl6, mTrunk, 0.05, 0.22, 0.05, d[0] * 0.2, 0.11, d[1] * 0.16, p));
+      M(G.box, mWood, 0.52, 0.04, 0.42, 0, 0.22, 0, p);
+      M(G.box, mWood, 0.46, 0.22, 0.36, 0, 0.35, 0, p);
+      const roof = M(G.cone4, mOchre, 0.66, 0.26, 0.66, 0, 0.59, 0, p); roof.rotation.y = Math.PI / 4;
+      M(G.box, mDark, 0.1, 0.14, 0.03, 0, 0.33, 0.19, p);
+      M(G.sph, mBone, 0.12, 0.09, 0.12, -0.32, 0.05, 0.3, p);
+      M(G.cyl8, mWood, 0.14, 0.13, 0.14, 0.32, 0.065, 0.3, p);
+      M(G.cyl8, mWood, 0.12, 0.1, 0.12, 0.34, 0.05, -0.28, p);
+    }
+    /* Steinkreis: Schritt für Schritt wachsende Steinsetzung, 8 Pfeiler, 8 Decksteine, Altar, zwei innere Tore */
+    function bMonument(p, step) {
+      const n = step || 0, done = n >= MON.steps;
+      M(G.cyl8, mDirt, 0.98, 0.03, 0.98, 0, 0.015, 0, p);
+      const seq = [];
+      for (let i = 0; i < 8; i++) { seq.push(['u', i]); if (i >= 1) seq.push(['l', i - 1]); }
+      seq.push(['l', 7], ['a', 0], ['t', 0], ['t', 1]);
+      const R1 = 0.34;
+      seq.forEach((it, k) => {
+        if (k >= n) return;
+        const i = it[1];
+        if (it[0] === 'u') {
+          const a = (i / 8) * 6.283, m = M(G.box, i % 2 ? mRock2 : mRock, 0.12, 0.46 + 0.04 * (i % 3), 0.08, Math.cos(a) * R1, 0.26, Math.sin(a) * R1, p);
+          m.rotation.y = -a - 1.5708; m.rotation.z = 0.03 * ((i % 3) - 1);
+        } else if (it[0] === 'l') {
+          const a = ((i + 0.5) / 8) * 6.283, r = R1 * Math.cos(0.3927);
+          const m = M(G.box, mRock2, 0.3, 0.07, 0.1, Math.cos(a) * r, 0.5, Math.sin(a) * r, p);
+          m.rotation.y = -a - 1.5708;
+        } else if (it[0] === 'a') {
+          M(G.box, mRock, 0.2, 0.06, 0.11, 0, 0.06, 0, p);
+        } else {
+          const z = i ? 0.11 : -0.11;
+          M(G.box, mRock, 0.07, 0.34, 0.07, -0.09, 0.2, z, p);
+          M(G.box, mRock, 0.07, 0.34, 0.07, 0.09, 0.2, z, p);
+          M(G.box, mRock2, 0.28, 0.06, 0.09, 0, 0.4, z, p);
+        }
+      });
+      if (!done) {
+        /* Baustelle: Steinhaufen, Schlitten auf Rollhölzern, Stangen */
+        M(G.ico, mRock, 0.16, 0.1, 0.14, 0.36, 0.06, -0.12, p);
+        M(G.ico, mRock2, 0.11, 0.08, 0.12, 0.42, 0.05, 0.02, p);
+        for (let k = 0; k < 3; k++) { const l = M(G.cyl6, mTrunk, 0.04, 0.22, 0.04, -0.38, 0.045, 0.1 + k * 0.1, p); l.rotation.z = 1.5708; }
+        M(G.box, mWood, 0.3, 0.03, 0.1, -0.38, 0.1, 0.2, p);
+        M(G.box, mRock, 0.2, 0.08, 0.08, -0.38, 0.16, 0.2, p);
+        const st = M(G.cyl6, mTrunk, 0.025, 0.4, 0.025, 0.05, 0.2, 0.44, p); st.rotation.z = 0.2;
+      }
+    }
+    const BLD = { lager: bLager, monument: bMonument, palisade: bPalisade, heiler: bHeiler, acker: bAcker, feuer: bFeuer, sammler: bSammler, holz: bHolz, stein: bStein, fisch: bFisch, jagd: bJagd, huette: bHuette, werk: bWerk, totem: bTotem };
 
     /* Aufbau der Karte */
     const tg = [], parts = [], bases = [];
@@ -885,7 +1038,8 @@
     function syncPeople(c) {
       const want = [];
       Object.keys(c.info).forEach((k) => { if (c.info[k].active) want.push({ m: 'w', i: +k }); });
-      const idle = Math.max(0, state.pop - c.employed);
+      if (c.builders && c.monI >= 0) for (let k = 0; k < c.builders; k++) want.push({ m: 'b', i: c.monI, k: k, n: c.builders });
+      const idle = Math.max(0, c.avail - c.employed);
       for (let k = 0; k < idle; k++) want.push({ m: 'i', k: k, n: idle });
       const cap = Math.min(want.length, 32);
       while (crowd.length < cap) crowd.push({ g: person(crowd.length), m: 'i', i: 0, k: 0, n: 1 });
@@ -989,6 +1143,11 @@
           p.g.position.set(g.position.x + 0.3, h + g.position.y, g.position.z + 0.26);
           p.g.rotation.z = anim ? Math.sin(t * 6 + j) * 0.12 : 0;
           p.g.rotation.y = -0.6;
+        } else if (p.m === 'b') {
+          const g = tg[p.i], a = (p.k * 6.283) / p.n + 0.4;
+          p.g.position.set(g.position.x + Math.cos(a) * 0.47, TH[state.tiles[p.i].t] + g.position.y, g.position.z + Math.sin(a) * 0.47);
+          p.g.rotation.y = -a + 1.57;
+          p.g.rotation.z = anim ? Math.sin(t * 5 + j) * 0.14 : 0;
         } else if (fireIdx >= 0) {
           const f = tg[fireIdx], a = t * 0.25 + (p.k * 6.283) / p.n;
           p.g.position.set(f.position.x + Math.cos(a) * 0.42, TH[state.tiles[fireIdx].t] + f.position.y + (anim ? Math.abs(Math.sin(t * 3 + j)) * 0.012 : 0), f.position.z + Math.sin(a) * 0.42);
@@ -1011,14 +1170,17 @@
       if (s !== seasonSeen) { seasonSeen = s; applyPalette(); }
       state.tiles.forEach((q, i) => {
         const p = parts[i];
-        if (p.key === q.b) return;
+        const step = q.b === 'monument' ? Math.min(MON.steps, Math.floor(MON.steps * state.mw / MON.work + 1e-6)) : 0;
+        const key = q.b === 'monument' ? 'monument:' + step : q.b;
+        if (p.key === key) return;
+        const grow = !(p.key && String(p.key).indexOf('monument') === 0 && q.b === 'monument');
         while (p.bld.children.length) p.bld.remove(p.bld.children[0]);
         p.bld.scale.setScalar(1);
-        p.key = q.b; p.anim = null;
+        p.key = key; p.anim = null;
         p.scen.visible = !q.b || q.t === 'fluss';
         if (q.b) {
-          p.anim = BLD[q.b](p.bld) || null;
-          p.t0 = anim ? now() : -100;
+          p.anim = BLD[q.b](p.bld, step) || null;
+          p.t0 = anim && grow ? now() : -100;
           if (q.b === 'feuer') { p.bld.add(fireLight); fireLight.position.set(0, 0.45, 0); }
         }
       });
@@ -1074,12 +1236,19 @@
     if (b) { build(b.dataset.build); return; }
     if (e.target.closest('[data-demolish]')) demolish();
   });
+  $('crew').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-crew]');
+    if (!b) return;
+    state.crew = Math.max(0, Math.min(state.pop, state.crew + (+b.dataset.crew)));
+    crewSig = ''; lastSig = '';
+    save(); render();
+  });
   $('seg').addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b) return;
     const sp = +b.dataset.sp;
     if (sp === 0) state.paused = true;
-    else { state.speed = sp; state.paused = false; state.wonSeen = true; }
+    else { state.speed = sp; state.paused = false; state.wonSeen = true; state.mSeen = true; }
     save(); render(); loop();
   });
   $('reset').addEventListener('click', () => {
@@ -1093,7 +1262,7 @@
   $('win').addEventListener('click', (e) => {
     const b = e.target.closest('[data-win]');
     if (!b) return;
-    if (b.dataset.win === 'keep') { state.wonSeen = true; state.paused = false; save(); render(); loop(); }
+    if (b.dataset.win === 'keep') { state.wonSeen = true; state.mSeen = true; state.paused = false; save(); render(); loop(); }
     else newGame();
   });
 
@@ -1105,6 +1274,7 @@
     state.log = Array.isArray(state.log) ? state.log : [];
     state.speed = [1, 2, 4].indexOf(state.speed) >= 0 ? state.speed : 1;
     state.paused = !!state.paused;
+    state.crew = state.crew | 0; state.mw = +state.mw || 0; state.mDone = !!state.mDone; state.mSeen = !!state.mSeen;
     sel = nearest('wald');
     try { scene3d = makeScene(selectTile); } catch (e) { scene3d = null; }
     if (!scene3d) {
