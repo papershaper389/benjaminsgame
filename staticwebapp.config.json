@@ -4,16 +4,16 @@
     { "route": "/manifest.webmanifest", "allowedRoles": ["anonymous"], "headers": { "Cache-Control": "no-cache" } },
     { "route": "/icons/*", "allowedRoles": ["anonymous"] },
     { "route": "/nicht-freigeschaltet.html", "allowedRoles": ["anonymous", "authenticated"] },
-    { "route": "/login", "rewrite": "/.auth/login/github" },
+    { "route": "/login", "rewrite": "/.auth/login/aad" },
     { "route": "/logout", "redirect": "/.auth/logout" },
-    { "route": "/.auth/login/aad", "statusCode": 404 },
+    { "route": "/.auth/login/github", "statusCode": 404 },
     { "route": "/.auth/login/twitter", "statusCode": 404 },
     { "route": "/env.js", "allowedRoles": ["spieler"], "headers": { "Cache-Control": "no-cache" } },
     { "route": "/index.html", "allowedRoles": ["spieler"], "headers": { "Cache-Control": "no-cache" } },
     { "route": "/*", "allowedRoles": ["spieler"] }
   ],
   "responseOverrides": {
-    "401": { "statusCode": 302, "redirect": "/.auth/login/github?post_login_redirect_uri=.referrer" },
+    "401": { "statusCode": 302, "redirect": "/.auth/login/aad?post_login_redirect_uri=.referrer" },
     "403": { "statusCode": 403, "rewrite": "/nicht-freigeschaltet.html" }
   },
   "mimeTypes": {
