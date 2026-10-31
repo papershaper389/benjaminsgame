@@ -53,4 +53,15 @@ if (env === 'beta') {
 }
 write('manifest.webmanifest', JSON.stringify(manifest, null, 2) + '\n');
 
+/* Cloudflare Pages liest Header aus _headers. Sie werden aus staticwebapp.config.json erzeugt, damit es nur eine Quelle gibt (Azure ignoriert die Datei). */
+const swa = JSON.parse(read('staticwebapp.config.json'));
+let hdr = '/*\n' + Object.entries(swa.globalHeaders || {}).map(([k, v]) => `  ${k}: ${v}`).join('\n') + '\n';
+for (const r of swa.routes || []) {
+  if (!r.headers) continue;
+  hdr += `${r.route}\n` + Object.entries(r.headers).map(([k, v]) => `  ${k}: ${v}`).join('\n') + '\n';
+}
+hdr += '/\n  Cache-Control: no-cache\n';
+for (const [ext, type] of Object.entries(swa.mimeTypes || {})) hdr += `/*${ext}\n  Content-Type: ${type}\n`;
+write('_headers', hdr);
+
 console.log(`${env} -> ${dest} (${sha}, ${base})`);

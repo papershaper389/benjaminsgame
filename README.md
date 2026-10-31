@@ -42,6 +42,17 @@ Die Dateien liefern weiter die zwei Azure Static Web Apps aus. Anmeldung, Spiels
 
 **Getrennte Daten:** Prod und Beta teilen das Supabase-Projekt, speichern aber getrennt (Spalte `env`). Wer sie auf zwei Projekte legen will, setzt `SUPABASE_URL` und `SUPABASE_ANON_KEY` als Umgebungsvariablen im jeweiligen Workflow-Schritt, sie haben Vorrang vor der Datei.
 
+## Zusätzlich: Cloudflare Pages
+
+Dieselbe App lässt sich parallel auf Cloudflare Pages ausliefern, zum Beispiel als zweite Adresse oder Ausweichplatz. Azure bleibt das Hauptziel. Die Header für Cloudflare erzeugt `scripts/stamp.mjs` beim Bauen aus `staticwebapp.config.json` (Datei `_headers`), es gibt also nur eine Quelle.
+
+1. Cloudflare-Dashboard → Workers & Pages → Create → Pages → mit GitHub verbinden, Repository `benjaminsgame`.
+2. Produktions-Branch `main`. Build-Befehl `node scripts/cf-build.mjs`, Ausgabeverzeichnis `dist`. Der Branch `beta` erscheint als Vorschau unter `beta.<projekt>.pages.dev`.
+3. Die neue Adresse in Supabase unter Authentication → URL Configuration als Redirect URL eintragen.
+4. Optional: **Cloudflare Access** (Zero Trust) vor die Seite legen, wenn auch die Dateien nicht öffentlich sein sollen. Dann sind `/manifest.webmanifest`, `/sw.js` und `/icons/*` per Bypass-Regel auszunehmen, sonst lässt sich die App nicht installieren oder aktualisieren. Es wäre eine zweite Anmeldung vor der von Supabase.
+
+Spielstand und Bestenliste hängen am Supabase-Konto und sind auf Azure und Cloudflare dieselben. Die installierte App ist je Adresse eine eigene App.
+
 ## Arbeitsablauf
 
 1. Änderungen auf `beta` pushen. Der Workflow baut die Beta-Version und veröffentlicht sie nach etwa einer Minute.
