@@ -1,0 +1,15 @@
+{
+  "name": "steinzeitdorf-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Spielstand und Bestenliste für das Steinzeitdorf (Azure Static Web Apps, verwaltete Functions)",
+  "main": "src/functions/*.js",
+  "scripts": {
+    "test": "node --test test/handlers.test.js"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@azure/functions": "^4.5.0",
+    "@azure/storage-blob": "^12.17.0"
+  }
+}

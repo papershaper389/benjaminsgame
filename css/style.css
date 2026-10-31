@@ -312,3 +312,21 @@ h1 { font: 400 clamp(30px, 8vw, 42px)/1 "Alfa Slab One", Georgia, serif; letter-
 .stepper .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .stepper output { font-variant-numeric: tabular-nums; }
 .ok { color: var(--good); }
+
+/* Bestenliste und Konto */
+.inp { flex: 1 1 10rem; min-width: 0; min-height: 44px; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface2); color: var(--fg); font: inherit; }
+.inp:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
+.ranks { display: grid; gap: 8px; }
+.rk { list-style: none; padding: 0; display: grid; gap: 6px; }
+.rk li { display: grid; grid-template-columns: 2em minmax(0, 1fr) auto; gap: 6px; align-items: baseline; font-size: 14px; }
+.rk .pos { color: var(--muted); font-variant-numeric: tabular-nums; }
+.rk .nm small { display: block; color: var(--muted); font-size: 12px; }
+.rk b { font-variant-numeric: tabular-nums; }
+.rk li.me { color: var(--accent); }
+.acct { border-top: 1px solid var(--line); padding-top: 8px; }
+.acct summary { cursor: pointer; font-weight: 700; min-height: 32px; }
+.acct label { font-size: 13px; font-weight: 700; margin-top: 4px; display: block; }
+.acct .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.acct .btn { min-height: 44px; }
+.acct[open] > * + * { margin-top: 6px; }
+a.btn { display: inline-flex; align-items: center; text-decoration: none; color: inherit; }

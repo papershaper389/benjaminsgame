@@ -30,6 +30,26 @@ Beide Static Web Apps sind hinter einer Anmeldung. Wer die Adresse öffnet, wird
 
 **Offline:** Die installierte App startet auch ohne Netz aus dem Zwischenspeicher. Online wird bei jedem Start zuerst die Anmeldung geprüft.
 
+## Spielstand und Bestenliste (Azure Functions)
+
+Es gibt nur eine Anmeldung: die von Azure vor den Dateien (siehe oben). Spielstand und Bestenliste speichern verwaltete Azure Functions im Ordner `api/` in einem Azure-Speicherkonto (Blob Storage). Sie erkennen den Spieler am Azure-Login und prüfen die Rolle `spieler` zusätzlich selbst.
+
+- `js/cloud.js` lädt beim Start den neueren von lokalem und Cloud-Stand und sichert alle paar Sekunden. Ohne Netz wird später nachgesichert, das Spiel läuft offline weiter.
+- Spielt man auf zwei Geräten, überschreibt ein älterer Stand nie einen neueren. Stattdessen erscheint „Neueren Stand laden“.
+- Die Bestenliste wertet Stufe, Bewohner, Bauten und Steinkreis aus. Der Name ist wählbar (Konto → Name). Die Punkte berechnet der Server.
+- `/api/*` und `/.auth/*` fängt der Service Worker nie ab, sie werden nicht zwischengespeichert.
+- Prod und Beta speichern getrennt (Pfad `saves/<prod|beta>/…`).
+
+**Einmalig einrichten** (pro Static Web App, also für Beta und Prod)
+1. Azure-Portal → Speicherkonto erstellen (Standard, LRS, Region wie die Static Web App, z. B. Westeuropa). Es kostet bei dieser Nutzung nur Cent-Beträge im Monat. Beta und Prod können dasselbe Konto verwenden.
+2. Im Speicherkonto: Sicherheit + Netzwerk → **Zugriffsschlüssel** → **Verbindungszeichenfolge** von key1 kopieren.
+3. Static Web App → **Konfiguration** (Settings → Environment variables) → Eintrag `STORAGE_CONNECTION` mit dieser Zeichenfolge anlegen und speichern. Das ist ein Geheimnis, es gehört nie ins Repository.
+4. Den Workflow neu laufen lassen (Actions → Run workflow), damit die Functions bereitgestellt werden.
+
+Solange `STORAGE_CONNECTION` fehlt, läuft das Spiel lokal weiter und zeigt „Cloud noch nicht eingerichtet“.
+
+**Tests:** `cd api && npm ci && npm test` prüft die Schnittstelle mit einem Speicher im Arbeitsspeicher. Gegen den Blob-Speicher lässt sie sich mit dem Emulator Azurite probieren.
+
 ## Arbeitsablauf
 
 1. Änderungen auf `beta` pushen. Der Workflow baut die Beta-Version und veröffentlicht sie nach etwa einer Minute.
@@ -70,7 +90,8 @@ js/pwa.js                 Installieren, Update-Hinweis, Umgebungsanzeige
 sw.js                     Service Worker (Vorab-Cache, Offline, Updates)
 manifest.webmanifest      App-Manifest (Prod; Beta wird beim Bauen abgeleitet)
 env.js                    Umgebung und Version, wird beim Bauen überschrieben
-staticwebapp.config.json  Azure-Einstellungen (keine Zwischenspeicherung für sw.js, Manifest, env.js)
+staticwebapp.config.json  Azure-Einstellungen (Anmeldung, Header, keine Zwischenspeicherung für sw.js, Manifest, env.js)
+api/                      Azure Functions: Spielstand und Bestenliste
 scripts/stamp.mjs         Baut eine Umgebung und stempelt Version, Pfad und Namen ein
 icons/, icons/beta/       Icons für Prod und Beta
 vendor/three.min.js       three.js r128

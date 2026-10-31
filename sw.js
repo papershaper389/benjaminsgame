@@ -20,6 +20,7 @@ const ASSETS = [
   'css/style.css',
   'js/game.js',
   'js/pwa.js',
+  'js/cloud.js',
   'vendor/three.min.js',
   'fonts/alfa-slab-one-400.woff2',
   'fonts/atkinson-400.woff2',
@@ -56,7 +57,7 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
   if (!req.url.startsWith(self.registration.scope)) return;
   /* Anmeldung nie anfassen: weder abfangen noch zwischenspeichern */
-  if (url.pathname.startsWith('/.auth/') || url.pathname === '/login' || url.pathname === '/logout') return;
+  if (url.pathname.startsWith('/.auth/') || url.pathname.startsWith('/api/') || url.pathname === '/login' || url.pathname === '/logout') return;
 
   if (req.mode === 'navigate') {
     /* Online zuerst das Netz fragen, damit die Anmeldung greift. Nur ohne Verbindung kommt die gespeicherte Seite. */

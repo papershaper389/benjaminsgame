@@ -131,7 +131,11 @@
       crew: 0, mw: 0, mDone: false, mSeen: false
     };
   }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+  function save() {
+    state.savedAt = Date.now();
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+    if (window.Game && typeof window.Game.onSave === 'function') window.Game.onSave(state);
+  }
   function load() {
     try {
       const s = JSON.parse(localStorage.getItem(KEY));
@@ -1266,10 +1270,24 @@
     else newGame();
   });
 
+  /* ---------- Schnittstelle für die Cloud-Anbindung (js/cloud.js) ---------- */
+  window.Game = {
+    start: boot,
+    onSave: null,
+    key: KEY,
+    getState: () => state,
+    summary: () => ({
+      day: state.day, pop: state.pop, era: state.era,
+      buildings: state.tiles.filter((q) => q.b).length,
+      monument: state.mDone ? 100 : Math.round(100 * state.mw / MON.work)
+    })
+  };
+
   /* ---------- Start ---------- */
   function boot(data) {
     const ok = data && Array.isArray(data.tiles) && data.tiles.length === N && data.res && Number.isFinite(data.pop);
     state = ok ? data : (load() || fresh());
+    if (ok) { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
     state.era = state.era || 0;
     state.log = Array.isArray(state.log) ? state.log : [];
     state.speed = [1, 2, 4].indexOf(state.speed) >= 0 ? state.speed : 1;
@@ -1297,5 +1315,6 @@
     }
     render(); loop();
   }
-  boot();
+  /* Mit Cloud-Anbindung startet js/cloud.js das Spiel, sobald der Cloud-Stand geprüft ist */
+  if (!window.APP_CLOUD) boot();
 })();

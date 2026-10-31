@@ -26,7 +26,8 @@ rmSync(betaIcons, { recursive: true, force: true });
 const read = (f) => readFileSync(join(dest, f), 'utf8');
 const write = (f, s) => writeFileSync(join(dest, f), s);
 
-write('env.js', `window.APP_ENV = '${env}';\nwindow.APP_BUILD = '${date} · ${sha}';\n`);
+/* APP_CLOUD schaltet js/cloud.js ein: Spielstand und Bestenliste über die Azure-API (api/) */
+write('env.js', `window.APP_ENV = '${env}';\nwindow.APP_BUILD = '${date} · ${sha}';\nwindow.APP_CLOUD = true;\n`);
 
 const sw = read('sw.js');
 if (!sw.includes('__BUILD__') || !sw.includes('__ENV__')) throw new Error('Platzhalter in sw.js fehlen');
