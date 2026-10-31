@@ -26,8 +26,13 @@ rmSync(betaIcons, { recursive: true, force: true });
 const read = (f) => readFileSync(join(dest, f), 'utf8');
 const write = (f, s) => writeFileSync(join(dest, f), s);
 
-/* Supabase-Zugang kommt aus den Umgebungsvariablen des Builds. Der anon-Schlüssel ist öffentlich gedacht, den Schutz übernehmen die Regeln in supabase/schema.sql. */
-const { SUPABASE_URL: sbUrl, SUPABASE_ANON_KEY: sbKey } = process.env;
+/* Supabase-Zugang: Umgebungsvariablen des Builds, sonst supabase/public-config.json. Der öffentliche Schlüssel ist öffentlich gedacht, den Schutz übernehmen die Regeln in supabase/schema.sql. */
+let { SUPABASE_URL: sbUrl, SUPABASE_ANON_KEY: sbKey } = process.env;
+const cfgFile = join(src, 'supabase', 'public-config.json');
+if ((!sbUrl || !sbKey) && existsSync(cfgFile)) {
+  const c = JSON.parse(readFileSync(cfgFile, 'utf8'));
+  sbUrl = sbUrl || c.url; sbKey = sbKey || c.key;
+}
 let envJs = `window.APP_ENV = '${env}';\nwindow.APP_BUILD = '${date} · ${sha}';\n`;
 if (sbUrl && sbKey) envJs += `window.APP_SUPABASE = ${JSON.stringify({ url: sbUrl, key: sbKey })};\n`;
 else console.warn('Hinweis: SUPABASE_URL und SUPABASE_ANON_KEY fehlen, das Spiel läuft ohne Anmeldung und Cloud.');

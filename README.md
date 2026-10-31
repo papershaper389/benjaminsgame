@@ -46,12 +46,12 @@ Dieser Branch ersetzt Azure durch zwei Teile: Die Dateien liefert **Cloudflare P
 2. Authentication → Sign In / Providers: „Allow new users to sign up“ **ausschalten**.
 3. Authentication → URL Configuration: Site URL und Redirect URLs auf die Adressen der App setzen.
 4. Spieler einladen: Authentication → Users → Invite user, danach die Adresse in `allowed_emails` eintragen.
-5. Unter Project Settings → API die **Project URL** und den **anon public**-Schlüssel notieren. Der `service_role`-Schlüssel gehört nie in die App.
+5. Project URL und den öffentlichen Schlüssel (`sb_publishable_…` oder „anon public“) in `supabase/public-config.json` eintragen. Der geheime Schlüssel (`sb_secret_…` oder `service_role`) gehört nie in die App.
 
 **Einrichtung Cloudflare Pages**
 1. Pages-Projekt aus diesem GitHub-Repository anlegen. Produktions-Branch `main`.
 2. Build-Befehl `node scripts/cf-build.mjs`, Ausgabeverzeichnis `dist`.
-3. Umgebungsvariablen `SUPABASE_URL` und `SUPABASE_ANON_KEY`, getrennt für Produktion und Vorschau (der Branch `beta` wird als Vorschau veröffentlicht).
+3. Keine Variablen nötig: Der Build liest URL und öffentlichen Schlüssel aus `supabase/public-config.json`. Wer Prod und Beta auf getrennte Supabase-Projekte legen will, setzt `SUPABASE_URL` und `SUPABASE_ANON_KEY` getrennt für Produktion und Vorschau, sie haben Vorrang. Der Branch `beta` wird als Vorschau veröffentlicht.
 4. Optional: Cloudflare Access davor, wenn auch die Dateien nicht öffentlich sein sollen.
 
 Die Azure-Workflows und `staticwebapp.config.json` bleiben, bis der Umzug abgeschlossen ist.
