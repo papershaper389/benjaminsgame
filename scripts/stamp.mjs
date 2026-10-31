@@ -14,7 +14,7 @@ if (!['prod', 'beta'].includes(env) || !src || !dest || !sha || !date || !base) 
   process.exit(1);
 }
 
-const APP = ['index.html', 'env.js', 'manifest.webmanifest', 'sw.js', 'staticwebapp.config.json', 'nicht-freigeschaltet.html', 'css', 'js', 'vendor', 'fonts', 'icons'];
+const APP = ['index.html', 'env.js', 'manifest.webmanifest', 'sw.js', 'staticwebapp.config.json', 'nicht-freigeschaltet.html', '_headers', 'css', 'js', 'vendor', 'fonts', 'icons'];
 mkdirSync(dest, { recursive: true });
 for (const item of APP) cpSync(join(src, item), join(dest, item), { recursive: true });
 
@@ -26,7 +26,12 @@ rmSync(betaIcons, { recursive: true, force: true });
 const read = (f) => readFileSync(join(dest, f), 'utf8');
 const write = (f, s) => writeFileSync(join(dest, f), s);
 
-write('env.js', `window.APP_ENV = '${env}';\nwindow.APP_BUILD = '${date} · ${sha}';\n`);
+/* Supabase-Zugang kommt aus den Umgebungsvariablen des Builds. Der anon-Schlüssel ist öffentlich gedacht, den Schutz übernehmen die Regeln in supabase/schema.sql. */
+const { SUPABASE_URL: sbUrl, SUPABASE_ANON_KEY: sbKey } = process.env;
+let envJs = `window.APP_ENV = '${env}';\nwindow.APP_BUILD = '${date} · ${sha}';\n`;
+if (sbUrl && sbKey) envJs += `window.APP_SUPABASE = ${JSON.stringify({ url: sbUrl, key: sbKey })};\n`;
+else console.warn('Hinweis: SUPABASE_URL und SUPABASE_ANON_KEY fehlen, das Spiel läuft ohne Anmeldung und Cloud.');
+write('env.js', envJs);
 
 const sw = read('sw.js');
 if (!sw.includes('__BUILD__') || !sw.includes('__ENV__')) throw new Error('Platzhalter in sw.js fehlen');

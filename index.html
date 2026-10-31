@@ -87,6 +87,7 @@
       <section class="card" id="panel" aria-live="polite"></section>
       <section class="card" id="goal"></section>
       <section class="card shield" id="shield"></section>
+      <section class="card ranks" id="ranks" aria-label="Bestenliste" hidden></section>
       <section class="card log"><h3>Chronik</h3><ol id="log" aria-live="polite"></ol></section>
       <details class="card help">
         <summary>Spielhilfe</summary>
@@ -108,8 +109,12 @@
   <footer class="foot muted" id="foot"></footer>
 </main>
 
+<div class="gate" id="gate" role="dialog" aria-modal="true" aria-labelledby="gateH" hidden></div>
+
 <script src="vendor/three.min.js"></script>
+<script src="vendor/supabase.js"></script>
 <script src="js/game.js"></script>
+<script src="js/cloud.js"></script>
 <script src="js/pwa.js"></script>
 </body>
 </html>

@@ -30,6 +30,32 @@ Beide Static Web Apps sind hinter einer Anmeldung. Wer die Adresse öffnet, wird
 
 **Offline:** Die installierte App startet auch ohne Netz aus dem Zwischenspeicher. Online wird bei jedem Start zuerst die Anmeldung geprüft.
 
+## Umzug auf Supabase und Cloudflare Pages (Branch `supabase`)
+
+Dieser Branch ersetzt Azure durch zwei Teile: Die Dateien liefert **Cloudflare Pages** aus, Anmeldung, Spielstand und Bestenliste übernimmt **Supabase**. Das Spiel läuft weiter offline. Erst nach der Anmeldung startet es.
+
+**Wie es zusammenspielt**
+- `js/cloud.js` meldet an (E-Mail und Passwort oder Link per E-Mail), prüft die Freigabe, lädt den neueren von lokalem und Cloud-Stand und sichert alle paar Sekunden.
+- Der Spielstand liegt lokal und in der Tabelle `saves`, je Konto und Umgebung. Der jeweils neuere Stand gewinnt. Ohne Netz wird später nachgesichert.
+- Die Bestenliste (`scores`) zeigt alle Spieler mit Punkten aus Stufe, Bewohnern, Bauten und Steinkreis und aktualisiert sich live.
+- Wer spielen darf, steht in `allowed_emails`. Die Regeln in `supabase/schema.sql` erzwingen das in der Datenbank, nicht nur in der App.
+- Die Dateien selbst sind öffentlich abrufbar, sie enthalten aber keine Daten. Wer sie öffnet, sieht nur das Anmeldefenster.
+
+**Einrichtung Supabase** (je ein Projekt für Prod und Beta, oder ein gemeinsames)
+1. Projekt anlegen, im SQL Editor `supabase/schema.sql` ausführen.
+2. Authentication → Sign In / Providers: „Allow new users to sign up“ **ausschalten**.
+3. Authentication → URL Configuration: Site URL und Redirect URLs auf die Adressen der App setzen.
+4. Spieler einladen: Authentication → Users → Invite user, danach die Adresse in `allowed_emails` eintragen.
+5. Unter Project Settings → API die **Project URL** und den **anon public**-Schlüssel notieren. Der `service_role`-Schlüssel gehört nie in die App.
+
+**Einrichtung Cloudflare Pages**
+1. Pages-Projekt aus diesem GitHub-Repository anlegen. Produktions-Branch `main`.
+2. Build-Befehl `node scripts/cf-build.mjs`, Ausgabeverzeichnis `dist`.
+3. Umgebungsvariablen `SUPABASE_URL` und `SUPABASE_ANON_KEY`, getrennt für Produktion und Vorschau (der Branch `beta` wird als Vorschau veröffentlicht).
+4. Optional: Cloudflare Access davor, wenn auch die Dateien nicht öffentlich sein sollen.
+
+Die Azure-Workflows und `staticwebapp.config.json` bleiben, bis der Umzug abgeschlossen ist.
+
 ## Arbeitsablauf
 
 1. Änderungen auf `beta` pushen. Der Workflow baut die Beta-Version und veröffentlicht sie nach etwa einer Minute.
