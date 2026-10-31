@@ -26,6 +26,16 @@ rmSync(betaIcons, { recursive: true, force: true });
 const read = (f) => readFileSync(join(dest, f), 'utf8');
 const write = (f, s) => writeFileSync(join(dest, f), s);
 
+/* Auth0-Domain in die Konfiguration einsetzen. Fehlt sie, bricht der Build ab, damit keine Version ohne funktionierende Anmeldung veröffentlicht wird (die bisherige bleibt dann online). */
+let domain = process.env.AUTH0_DOMAIN;
+const a0 = join(src, 'auth0', 'public-config.json');
+if (!domain && existsSync(a0)) domain = JSON.parse(readFileSync(a0, 'utf8')).domain;
+if (!domain || /dein-tenant/i.test(domain) || !/^[a-z0-9-]+(\.[a-z0-9-]+)*\.auth0\.com$/i.test(domain)) {
+  console.error('Fehler: Keine gültige Auth0-Domain. Trage sie in auth0/public-config.json ein (z. B. mein-dorf.eu.auth0.com) oder setze AUTH0_DOMAIN.');
+  process.exit(1);
+}
+write('staticwebapp.config.json', read('staticwebapp.config.json').replaceAll('__AUTH0_DOMAIN__', domain));
+
 /* APP_CLOUD schaltet js/cloud.js ein: Spielstand und Bestenliste über die Azure-API (api/) */
 write('env.js', `window.APP_ENV = '${env}';\nwindow.APP_BUILD = '${date} · ${sha}';\nwindow.APP_CLOUD = true;\n`);
 

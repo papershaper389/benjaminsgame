@@ -81,3 +81,15 @@ test('Speicher nicht eingerichtet: 503', async () => {
   const r = await h.getSave(req('GET', who('hhh'), { env: 'beta' }));
   assert.strictEqual(r.status, 503);
 });
+
+test('Rollen: nur Adressen auf der Freigabeliste bekommen spieler', async () => {
+  process.env.ALLOWED_EMAILS = 'Anna@X.de; bert@x.de  carl@x.de';
+  const body = (email, extra = []) => ({ method: 'POST', headers: { get: () => null }, query: { get: () => null }, text: async () => JSON.stringify({ identityProvider: 'auth0', userId: 'u', userDetails: email, claims: [{ typ: 'email', val: email }].concat(extra) }) });
+  assert.deepStrictEqual((await h.getRoles(body('anna@x.de'))).jsonBody, { roles: ['spieler'] });
+  assert.deepStrictEqual((await h.getRoles(body('BERT@x.de'))).jsonBody, { roles: ['spieler'] });
+  assert.deepStrictEqual((await h.getRoles(body('fremd@x.de'))).jsonBody, { roles: [] });
+  assert.deepStrictEqual((await h.getRoles(body('anna@x.de', [{ typ: 'email_verified', val: 'false' }]))).jsonBody, { roles: [] });
+  assert.deepStrictEqual((await h.getRoles({ text: async () => 'kein json' })).jsonBody, { roles: [] });
+  delete process.env.ALLOWED_EMAILS;
+  assert.deepStrictEqual((await h.getRoles(body('anna@x.de'))).jsonBody, { roles: [] });
+});

@@ -1,6 +1,12 @@
 {
   "routes": [
     {
+      "route": "/api/roles",
+      "allowedRoles": [
+        "anonymous"
+      ]
+    },
+    {
       "route": "/api/*",
       "allowedRoles": [
         "spieler"
@@ -39,11 +45,15 @@
     },
     {
       "route": "/login",
-      "rewrite": "/.auth/login/aad"
+      "rewrite": "/.auth/login/auth0"
     },
     {
       "route": "/logout",
       "redirect": "/.auth/logout"
+    },
+    {
+      "route": "/.auth/login/aad",
+      "statusCode": 404
     },
     {
       "route": "/.auth/login/github",
@@ -81,7 +91,7 @@
   "responseOverrides": {
     "401": {
       "statusCode": 302,
-      "redirect": "/.auth/login/aad?post_login_redirect_uri=.referrer"
+      "redirect": "/.auth/login/auth0?post_login_redirect_uri=.referrer"
     },
     "403": {
       "statusCode": 403,
@@ -99,5 +109,34 @@
   },
   "platform": {
     "apiRuntime": "node:20"
+  },
+  "auth": {
+    "rolesSource": "/api/roles",
+    "identityProviders": {
+      "customOpenIdConnectProviders": {
+        "auth0": {
+          "registration": {
+            "clientIdSettingName": "AUTH0_CLIENT_ID",
+            "clientCredential": {
+              "clientSecretSettingName": "AUTH0_CLIENT_SECRET"
+            },
+            "openIdConnectConfiguration": {
+              "wellKnownOpenIdConfiguration": "https://__AUTH0_DOMAIN__/.well-known/openid-configuration"
+            }
+          },
+          "login": {
+            "nameClaimType": "email",
+            "scopes": [
+              "openid",
+              "profile",
+              "email"
+            ],
+            "loginParameterNames": [
+              "prompt"
+            ]
+          }
+        }
+      }
+    }
   }
 }

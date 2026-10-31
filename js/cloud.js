@@ -171,7 +171,8 @@
     } else if (id === 'acOut') {
       if (dirty && !(await flush())) return msg('Der letzte Stand ist noch nicht gesichert. Bitte erst online gehen.');
       try { localStorage.removeItem(window.Game.key); localStorage.removeItem(OWNER); localStorage.removeItem(NAMEKEY); localStorage.removeItem(USERKEY); } catch (e) {}
-      location.href = '/.auth/logout?post_logout_redirect_uri=/';
+      /* Danach sofort die Anmeldung mit erzwungener Eingabe, damit auch ein anderes Konto möglich ist */
+      location.href = '/.auth/logout?post_logout_redirect_uri=%2F.auth%2Flogin%2Fauth0%3Fprompt%3Dlogin';
     }
   });
 

@@ -20,19 +20,36 @@ Die beiden Versionen sind vollständig getrennt:
 - **Eigener Spielstand.** Der Spielstand liegt im Browser der jeweiligen Domain, der Schlüssel heißt `steinzeitdorf-v1:prod` bzw. `steinzeitdorf-v1:beta`.
 - **Erkennbar.** Beta hat blaue Icons mit „BETA“-Band, den Namen „Steinzeitdorf Beta“ und ein Abzeichen im Spiel. Die Fußzeile zeigt Datum und Commit der laufenden Version.
 
-## Zugriffsschutz
+## Zugriffsschutz (Auth0 mit E-Mail-Code)
 
-Beide Static Web Apps sind hinter einer Anmeldung. Wer die Adresse öffnet, wird zu Microsoft geschickt und kommt nur hinein, wenn das Konto die Rolle `spieler` hat. Alle anderen sehen die Seite „Kein Zugang“ (`nicht-freigeschaltet.html`). Konfiguriert ist das in `staticwebapp.config.json`.
+Beide Static Web Apps sind hinter einer Anmeldung. Wer die Adresse öffnet, wird zu Auth0 geschickt, bekommt dort einen Code per E-Mail und kommt nur hinein, wenn die Adresse auf der Freigabeliste steht. Alle anderen sehen die Seite „Kein Zugang“ (`nicht-freigeschaltet.html`). Konfiguriert ist das in `staticwebapp.config.json`. Die Dateien selbst werden erst nach der Anmeldung ausgeliefert.
 
-Öffentlich bleiben nur `sw.js`, `manifest.webmanifest`, `icons/` und die Seite „Kein Zugang“. Sie enthalten kein Spiel, und der Browser braucht sie ohne Anmeldung, um die App zu installieren und zu aktualisieren.
+- **Anbieter:** Auth0 als eigener OpenID-Connect-Anbieter (`/.auth/login/auth0`). Das geht nur im **Standard-Tarif** der Static Web App (etwa 9 USD pro Monat und App). Im Free-Tarif funktioniert es nicht.
+- **Rolle:** Nach jeder Anmeldung ruft Azure die Funktion `api/roles` auf. Sie vergibt die Rolle `spieler`, wenn die verifizierte Adresse in der App-Einstellung `ALLOWED_EMAILS` steht. Ohne diese Einstellung bekommt niemand die Rolle (sicherer Ausgangszustand).
+- **Öffentlich** bleiben nur `sw.js`, `manifest.webmanifest`, `icons/`, `nicht-freigeschaltet.html` und `/api/roles`. Der Build bricht ab, wenn in `auth0/public-config.json` keine echte Auth0-Domain steht, damit nie eine Version ohne funktionierende Anmeldung veröffentlicht wird.
+- **Offline:** Die installierte App startet auch ohne Netz aus dem Zwischenspeicher. Online wird bei jedem Start zuerst die Anmeldung geprüft.
 
-**Person freischalten** (pro Umgebung einzeln): Azure-Portal → Static Web App → **Rollenverwaltung** → **Einladen**. Anbieter `Microsoft Entra ID`, E-Mail-Adresse der Person, Rolle `spieler`, Gültigkeit wählen. Die Person öffnet den erzeugten Link und meldet sich an.
+### Einrichtung Auth0 (einmalig)
+1. Kostenlosen Account auf auth0.com anlegen, Tenant erstellen (Region EU). Die Domain sieht aus wie `mein-dorf.eu.auth0.com`. Sie gehört in `auth0/public-config.json`.
+2. **Authentication → Passwordless → Email** einschalten. Im Reiter „Settings“ den Typ **Code** wählen (nicht Link), „Disable Sign Ups“ einschalten. Unter „Applications“ die App aktivieren (Schritt 3).
+3. **Applications → Create Application → Regular Web Applications.** Notiere Client ID und Client Secret. Unter **Settings** trägst du ein:
+   - Allowed Callback URLs: `https://<adresse-der-static-web-app>/.auth/login/auth0/callback`, für Beta und Prod jeweils die eigene Adresse, durch Komma getrennt.
+   - Allowed Logout URLs: dieselben Adressen mit `/`.
+4. Reiter **Connections** der Application: nur **email** aktivieren, alle anderen (z. B. Username-Password) ausschalten.
+5. **User Management → Users → Create User:** jede Person mit ihrer E-Mail-Adresse anlegen (Connection `email`). Wegen „Disable Sign Ups“ bekommen nur angelegte Personen einen Code.
 
-**Offline:** Die installierte App startet auch ohne Netz aus dem Zwischenspeicher. Online wird bei jedem Start zuerst die Anmeldung geprüft.
+### Einrichtung Azure (pro Static Web App)
+1. Portal → Static Web App → **Hosting plan** auf **Standard** stellen.
+2. **Settings → Environment variables** (früher „Configuration“) drei Einträge anlegen:
+   - `AUTH0_CLIENT_ID` und `AUTH0_CLIENT_SECRET` aus Auth0 (Geheimnisse, nie ins Repository),
+   - `ALLOWED_EMAILS`: erlaubte Adressen, getrennt durch Komma, z. B. `ich@example.com,oma@example.com`.
+3. `auth0/public-config.json` mit der Domain füllen, committen, Workflow laufen lassen.
+
+**Person freischalten:** Adresse in Auth0 anlegen (Schritt 5) und in `ALLOWED_EMAILS` ergänzen. Beides ist nötig. Die Liste in Azure ist maßgeblich, Auth0 verschickt nur den Code. Die Änderung gilt ab der nächsten Anmeldung.
 
 ## Spielstand und Bestenliste (Azure Functions)
 
-Es gibt nur eine Anmeldung: die von Azure vor den Dateien (siehe oben). Spielstand und Bestenliste speichern verwaltete Azure Functions im Ordner `api/` in einem Azure-Speicherkonto (Blob Storage). Sie erkennen den Spieler am Azure-Login und prüfen die Rolle `spieler` zusätzlich selbst.
+Es gibt nur eine Anmeldung: die von Azure und Auth0 vor den Dateien (siehe oben). Spielstand und Bestenliste speichern verwaltete Azure Functions im Ordner `api/` in einem Azure-Speicherkonto (Blob Storage). Sie erkennen den Spieler am Azure-Login und prüfen die Rolle `spieler` zusätzlich selbst.
 
 - `js/cloud.js` lädt beim Start den neueren von lokalem und Cloud-Stand und sichert alle paar Sekunden. Ohne Netz wird später nachgesichert, das Spiel läuft offline weiter.
 - Spielt man auf zwei Geräten, überschreibt ein älterer Stand nie einen neueren. Stattdessen erscheint „Neueren Stand laden“.

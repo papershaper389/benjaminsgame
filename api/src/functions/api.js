@@ -19,3 +19,9 @@ app.http('score', {
   route: 'score',
   handler: (req, ctx) => h.putScore(req, ctx)
 });
+app.http('roles', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'roles',
+  handler: (req, ctx) => h.getRoles(req, ctx)
+});

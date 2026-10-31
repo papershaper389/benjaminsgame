@@ -108,4 +108,18 @@ function putScore(request, context) {
   });
 }
 
-module.exports = { getSave, putSave, getScores, putScore, principal, points };
+/* POST /api/roles: wird von Azure Static Web Apps bei jeder Anmeldung aufgerufen (auth.rolesSource).
+   Antwort: { roles: ["spieler"] } nur für Adressen auf der Freigabeliste (App-Einstellung ALLOWED_EMAILS, getrennt durch Komma, Semikolon oder Leerzeichen). */
+async function getRoles(request) {
+  let p = null;
+  try { p = JSON.parse(await request.text()); } catch (e) { p = null; }
+  const claims = (p && Array.isArray(p.claims)) ? p.claims : [];
+  const val = (t) => { const c = claims.find((x) => x && x.typ === t); return c ? c.val : undefined; };
+  const email = String(val('email') || (p && p.userDetails) || '').trim().toLowerCase();
+  const verified = val('email_verified');
+  const allowed = String(process.env.ALLOWED_EMAILS || '').toLowerCase().split(/[\s,;]+/).filter(Boolean);
+  const ok = !!email && email.indexOf('@') > 0 && verified !== 'false' && verified !== false && allowed.indexOf(email) >= 0;
+  return { status: 200, jsonBody: { roles: ok ? [ROLE] : [] }, headers: NO_STORE };
+}
+
+module.exports = { getSave, putSave, getScores, putScore, getRoles, principal, points };
